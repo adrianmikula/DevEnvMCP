@@ -40,23 +40,119 @@ dev-env-sentinel/
 3. **Efficiency**: Minimal allocations, optimized file operations
 4. **Extensibility**: Add new ecosystems via YAML configs
 
+## Installation
+
+### Via npm/npx (Recommended)
+
+Install globally:
+```bash
+npm install -g dev-env-sentinel
+```
+
+Or use with npx (no installation required):
+```bash
+npx dev-env-sentinel
+```
+
+### For MCP Clients
+
+#### Cursor
+
+Add to your Cursor MCP settings (`~/.cursor/mcp.json` on Linux/Mac, `%APPDATA%\Cursor\mcp.json` on Windows):
+
+```json
+{
+  "mcpServers": {
+    "dev-env-sentinel": {
+      "command": "npx",
+      "args": ["-y", "dev-env-sentinel"]
+    }
+  }
+}
+```
+
+Or if installed globally:
+```json
+{
+  "mcpServers": {
+    "dev-env-sentinel": {
+      "command": "dev-env-sentinel"
+    }
+  }
+}
+```
+
+#### Claude Code
+
+Add to your Claude Code MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "dev-env-sentinel": {
+      "command": "npx",
+      "args": ["-y", "dev-env-sentinel"]
+    }
+  }
+}
+```
+
+#### Google Antigravity
+
+Add to your Antigravity MCP configuration:
+
+```json
+{
+  "mcpServers": {
+    "dev-env-sentinel": {
+      "command": "npx",
+      "args": ["-y", "dev-env-sentinel"]
+    }
+  }
+}
+```
+
 ## Development
 
 ### Prerequisites
 
 - Go 1.13+ (Go Modules support)
-- YAML configs in `ecosystem-configs/`
+- Node.js 14+ (for build scripts)
+- YAML configs in `language-configs/` and `tool-configs/`
 
 ### Build
 
+Build for current platform:
+```bash
+npm run build
+```
+
+Build for all platforms (Windows and Linux):
+```bash
+npm run build:all
+```
+
+Build for specific platform:
+```bash
+npm run build:windows
+npm run build:linux
+```
+
+Or build directly with Go:
 ```bash
 go build ./cmd/sentinel
 ```
 
 ### Run
 
+Run the MCP server (no arguments for MCP mode):
 ```bash
-./sentinel <project-root>
+./sentinel
+```
+
+Or via npm:
+```bash
+npx dev-env-sentinel
 ```
 
 ## Supported Ecosystems

@@ -1,0 +1,48 @@
+# Source code
+cmd/
+internal/
+*.go
+go.mod
+go.sum
+
+# Build artifacts (except bin/)
+*.exe
+sentinel
+sentinel.exe
+
+# Development files
+.git/
+.gitignore
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Test files
+testdata/
+integration/
+*_test.go
+
+# Documentation (keep README.md)
+docs/
+
+# Config files (keep language-configs and tool-configs)
+ecosystem-configs/
+config/
+
+# Scripts source (keep compiled bin/)
+scripts/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Temporary files
+tmp/
+temp/
+

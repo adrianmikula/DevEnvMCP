@@ -1,0 +1,54 @@
+{
+  "name": "dev-env-sentinel",
+  "version": "0.1.0",
+  "description": "A lean, efficient MCP server for monitoring and verifying development environment health",
+  "main": "bin/sentinel.js",
+  "bin": {
+    "dev-env-sentinel": "./bin/sentinel.js"
+  },
+  "scripts": {
+    "build": "node scripts/build.js",
+    "build:windows": "node scripts/build.js windows",
+    "build:linux": "node scripts/build.js linux",
+    "build:all": "node scripts/build.js all",
+    "prepublishOnly": "npm run build:all",
+    "postinstall": "node scripts/postinstall.js"
+  },
+  "keywords": [
+    "mcp",
+    "mcp-server",
+    "dev-env",
+    "environment",
+    "monitoring",
+    "verification",
+    "cursor",
+    "claude",
+    "antigravity"
+  ],
+  "author": "",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "files": [
+    "bin",
+    "language-configs",
+    "tool-configs",
+    "scripts",
+    "README.md",
+    "LICENSE"
+  ],
+  "os": [
+    "win32",
+    "linux"
+  ],
+  "cpu": [
+    "x64",
+    "arm64"
+  ]
+}
+
