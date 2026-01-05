@@ -1,0 +1,105 @@
+ecosystem:
+  name: "PostgreSQL"
+  id: "postgres"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "docker-compose.yml"
+      - "docker-compose.yaml"
+      - "*.sql"
+      - "migrations"
+      - "schema.sql"
+      - "init.sql"
+    required_files: []
+    optional_files:
+      - "docker-compose.yml"
+      - "docker-compose.yaml"
+      - "*.sql"
+      - "migrations/**/*.sql"
+      - "schema.sql"
+      - "init.sql"
+      - ".env"
+    directory_patterns:
+      - "migrations"
+      - "db"
+      - "database"
+      
+  manifest:
+    primary_file: "docker-compose.yml"
+    location: "."
+    format: "yaml"
+    
+  cache:
+    locations:
+      - "${HOME}/.docker"
+      - "/var/lib/docker"
+    structure: "hierarchical"
+    artifact_pattern: ".*"
+    
+  build:
+    output_directories: []
+    artifact_patterns: []
+    clean_command: ""
+    
+  dependencies:
+    lock_file: ""
+    lock_file_format: ""
+    resolve_command: ""
+    check_command: "psql --version || docker exec <container> psql --version"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: false
+      cache_timestamp_check: false
+      build_output_check: false
+      commands:
+        - name: "check_migrations_vs_database"
+          type: "timestamp_compare"
+          source_pattern: "migrations/**/*.sql"
+          target_pattern: ""
+          description: "Check if migration files are newer than database schema (requires database connection)"
+          
+    dependency_audit:
+      enabled: false
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "POSTGRES_([A-Z_][A-Z0-9_]*)"
+      - "DATABASE_([A-Z_][A-Z0-9_]*)"
+      - "DB_([A-Z_][A-Z0-9_]*)"
+      - "postgresql://.*"
+      - "postgres://.*"
+    config_files:
+      - ".env"
+      - ".env.local"
+      - "docker-compose.yml"
+      - "docker-compose.yaml"
+      - "config/database.yml"
+      - "config/database.yaml"
+    required_vars:
+      - "POSTGRES_HOST"
+      - "POSTGRES_DB"
+      - "POSTGRES_USER"
+      - "POSTGRES_PASSWORD"
+    
+  infrastructure:
+    services:
+      - name: "postgres"
+        type: "command"
+        check_command: "psql --version || docker exec <container> psql --version"
+        version_extract: "psql \\(PostgreSQL\\) (\\d+\\.\\d+)"
+        
+      - name: "postgres_docker"
+        type: "command"
+        check_command: "docker ps | grep postgres"
+        version_extract: ""
+        
+  reconciliation:
+    fixes:
+      - issue_type: "missing_migrations"
+        command: "psql -U <user> -d <database> -f migrations/*.sql || docker exec <container> psql -U <user> -d <database> -f /migrations/*.sql"
+        verify_command: "psql -U <user> -d <database> -c '\\dt' || docker exec <container> psql -U <user> -d <database> -c '\\dt'"
+        description: "Run pending database migrations"
+

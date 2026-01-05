@@ -1,0 +1,102 @@
+ecosystem:
+  name: "Docker"
+  id: "docker"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "Dockerfile"
+      - "docker-compose.yml"
+      - "docker-compose.yaml"
+      - ".dockerignore"
+    required_files: []
+    optional_files:
+      - "Dockerfile"
+      - "Dockerfile.*"
+      - "docker-compose.yml"
+      - "docker-compose.yaml"
+      - ".dockerignore"
+    directory_patterns: []
+      
+  manifest:
+    primary_file: "Dockerfile"
+    location: "."
+    format: "text"
+    
+  cache:
+    locations:
+      - "${HOME}/.docker"
+      - "/var/lib/docker"
+    structure: "hierarchical"
+    artifact_pattern: ".*"
+    
+  build:
+    output_directories: []
+    artifact_patterns:
+      - "*.tar"
+    clean_command: "docker system prune -f"
+    
+  dependencies:
+    lock_file: ""
+    lock_file_format: ""
+    resolve_command: "docker pull"
+    check_command: "docker images"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: true
+      build_output_check: false
+      commands:
+        - name: "check_dockerfile_vs_image"
+          type: "timestamp_compare"
+          source: "Dockerfile"
+          target_pattern: ""
+          description: "Check if Dockerfile is newer than built image (requires docker image inspection)"
+          
+        - name: "check_docker_compose_vs_containers"
+          type: "timestamp_compare"
+          source_pattern: "docker-compose.*"
+          target_pattern: ""
+          description: "Check if docker-compose.yml is newer than running containers"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "ENV ([A-Z_][A-Z0-9_]*)"
+      - "ARG ([A-Z_][A-Z0-9_]*)"
+      - "\\$\\{([A-Z_][A-Z0-9_]*)\\}"
+    config_files:
+      - ".env"
+      - ".env.docker"
+      - "docker-compose.yml"
+      - "docker-compose.yaml"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "docker"
+        type: "command"
+        check_command: "docker --version"
+        version_extract: "Docker version (\\d+\\.\\d+\\.\\d+)"
+        
+      - name: "docker-compose"
+        type: "command"
+        check_command: "docker compose version"
+        version_extract: "v(\\d+\\.\\d+\\.\\d+)"
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_image"
+        command: "docker build -t <image-name> ."
+        verify_command: "docker images | grep <image-name>"
+        description: "Rebuild Docker image from Dockerfile"
+        
+      - issue_type: "stale_containers"
+        command: "docker compose up -d --build"
+        verify_command: "docker compose ps"
+        description: "Rebuild and restart Docker Compose services"
+

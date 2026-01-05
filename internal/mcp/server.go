@@ -7,6 +7,9 @@ import (
 	"io"
 	"os"
 
+	"dev-env-sentinel/internal/auditor"
+	"dev-env-sentinel/internal/infra"
+	"dev-env-sentinel/internal/reconciler"
 	"dev-env-sentinel/internal/verifier"
 )
 
@@ -206,6 +209,12 @@ func formatResult(result interface{}) string {
 		return v
 	case *verifier.FreshnessReport:
 		return formatFreshnessReport(v)
+	case *infra.InfrastructureReport:
+		return formatInfrastructureReport(v)
+	case *auditor.EnvVarReport:
+		return formatEnvVarReport(v)
+	case *reconciler.ReconciliationReport:
+		return formatReconciliationReport(v)
 	default:
 		data, _ := json.MarshalIndent(v, "", "  ")
 		return string(data)
@@ -225,6 +234,74 @@ func formatFreshnessReport(report *verifier.FreshnessReport) string {
 			msg += fmt.Sprintf("  Fix: %s\n", issue.FixCommand)
 		}
 	}
+	return msg
+}
+
+// formatInfrastructureReport formats an infrastructure report
+func formatInfrastructureReport(report *infra.InfrastructureReport) string {
+	if report.IsHealthy {
+		return "✅ All infrastructure services are healthy"
+	}
+
+	msg := "❌ Infrastructure issues found:\n\n"
+	for _, service := range report.Services {
+		if !service.Healthy {
+			msg += fmt.Sprintf("- %s: %s\n", service.Name, service.Message)
+		} else {
+			msg += fmt.Sprintf("✅ %s: %s\n", service.Name, service.Message)
+		}
+	}
+	if len(report.Issues) > 0 {
+		msg += "\nIssues:\n"
+		for _, issue := range report.Issues {
+			msg += fmt.Sprintf("- %s\n", issue)
+		}
+	}
+	return msg
+}
+
+// formatEnvVarReport formats an environment variable report
+func formatEnvVarReport(report *auditor.EnvVarReport) string {
+	if report.IsHealthy {
+		return "✅ All required environment variables are set"
+	}
+
+	msg := fmt.Sprintf("❌ Environment variable issues found:\n\n")
+	msg += fmt.Sprintf("Missing variables (%d):\n", len(report.Missing))
+	for _, name := range report.Missing {
+		msg += fmt.Sprintf("- %s\n", name)
+	}
+	if len(report.Issues) > 0 {
+		msg += "\nIssues:\n"
+		for _, issue := range report.Issues {
+			msg += fmt.Sprintf("- %s\n", issue)
+		}
+	}
+	return msg
+}
+
+// formatReconciliationReport formats a reconciliation report
+func formatReconciliationReport(report *reconciler.ReconciliationReport) string {
+	msg := fmt.Sprintf("Reconciliation Results:\n\n")
+	
+	if len(report.Fixed) > 0 {
+		msg += fmt.Sprintf("✅ Fixed (%d):\n", len(report.Fixed))
+		for _, fix := range report.Fixed {
+			msg += fmt.Sprintf("- %s: %s\n", fix.IssueType, fix.Message)
+		}
+		msg += "\n"
+	}
+	
+	if len(report.Failed) > 0 {
+		msg += fmt.Sprintf("❌ Failed (%d):\n", len(report.Failed))
+		for _, fix := range report.Failed {
+			msg += fmt.Sprintf("- %s: %s\n", fix.IssueType, fix.Message)
+			if fix.Error != "" {
+				msg += fmt.Sprintf("  Error: %s\n", fix.Error)
+			}
+		}
+	}
+	
 	return msg
 }
 
