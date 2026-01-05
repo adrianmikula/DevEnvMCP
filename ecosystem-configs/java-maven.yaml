@@ -1,0 +1,80 @@
+ecosystem:
+  name: "Java Maven"
+  id: "java-maven"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "pom.xml"
+    required_files:
+      - "pom.xml"
+    directory_patterns:
+      - "src/main/java"
+      - "src/test/java"
+      
+  manifest:
+    primary_file: "pom.xml"
+    location: "."
+    format: "xml"
+    
+  cache:
+    locations:
+      - "${HOME}/.m2/repository"
+      - "${M2_HOME}/repository"
+    structure: "hierarchical"
+    artifact_pattern: ".*\\.jar$"
+    
+  build:
+    output_directories:
+      - "target/classes"
+      - "target/test-classes"
+    artifact_patterns:
+      - "target/*.jar"
+      - "target/*.war"
+    clean_command: "mvn clean"
+    
+  dependencies:
+    lock_file: ""
+    lock_file_format: ""
+    resolve_command: "mvn dependency:resolve"
+    check_command: "mvn dependency:tree"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: true
+      build_output_check: true
+      commands:
+        - name: "check_pom_vs_build"
+          type: "timestamp_compare"
+          source: "pom.xml"
+          target_pattern: "target/**/*.class"
+          description: "Compare pom.xml timestamp with compiled classes"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "\\$\\{([A-Z_][A-Z0-9_]*)\\}"
+      - "@Value\\(\"\\$\\{([A-Z_][A-Z0-9_]*)\\}\"\\)"
+    config_files:
+      - "src/main/resources/application.properties"
+      - "src/main/resources/application.yml"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "maven"
+        type: "command"
+        check_command: "mvn --version"
+        version_extract: "Apache Maven (\\d+\\.\\d+\\.\\d+)"
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_cache"
+        command: "mvn clean"
+        verify_command: "mvn validate"
+        description: "Clean Maven build artifacts"
+

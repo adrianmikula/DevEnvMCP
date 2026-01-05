@@ -1,0 +1,89 @@
+ecosystem:
+  name: "Java Gradle"
+  id: "java-gradle"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "build.gradle"
+      - "build.gradle.kts"
+    required_files:
+      - "build.gradle"
+    optional_files:
+      - "build.gradle.kts"
+      - "settings.gradle"
+    directory_patterns:
+      - "src/main/java"
+      - "src/test/java"
+      
+  manifest:
+    primary_file: "build.gradle"
+    location: "."
+    format: "groovy"
+    
+  cache:
+    locations:
+      - "${HOME}/.gradle/caches"
+      - "${GRADLE_USER_HOME}/caches"
+    structure: "hierarchical"
+    artifact_pattern: ".*\\.jar$"
+    
+  build:
+    output_directories:
+      - "build/classes"
+      - "build/test-classes"
+    artifact_patterns:
+      - "build/libs/*.jar"
+      - "build/distributions/*.zip"
+    clean_command: "gradle clean"
+    
+  dependencies:
+    lock_file: ""
+    lock_file_format: ""
+    resolve_command: "gradle dependencies"
+    check_command: "gradle dependencyInsight"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: true
+      build_output_check: true
+      commands:
+        - name: "check_gradle_vs_build"
+          type: "timestamp_compare"
+          source: "build.gradle"
+          target_pattern: "build/classes/**/*.class"
+          description: "Compare build.gradle timestamp with compiled classes"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "\\$\\{([A-Z_][A-Z0-9_]*)\\}"
+      - "System\\.getenv\\(\"([A-Z_][A-Z0-9_]*)\"\\)"
+    config_files:
+      - "gradle.properties"
+      - "src/main/resources/application.properties"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "gradle"
+        type: "command"
+        check_command: "gradle --version"
+        version_extract: "Gradle (\\d+\\.\\d+)"
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_cache"
+        command: "gradle clean"
+        verify_command: "gradle tasks"
+        description: "Clean Gradle build artifacts"
+        
+      - issue_type: "stale_build"
+        command: "gradle build"
+        verify_command: "gradle tasks"
+        description: "Rebuild stale artifacts"
+

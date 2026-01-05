@@ -1,0 +1,100 @@
+ecosystem:
+  name: "npm"
+  id: "npm"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "package.json"
+    required_files:
+      - "package.json"
+    optional_files:
+      - "package-lock.json"
+    directory_patterns:
+      - "node_modules"
+      
+  manifest:
+    primary_file: "package.json"
+    location: "."
+    format: "json"
+    
+  cache:
+    locations:
+      - "${HOME}/.npm"
+      - "${APPDATA}/npm-cache"
+    structure: "flat"
+    artifact_pattern: ".*"
+    
+  build:
+    output_directories:
+      - "dist"
+      - "build"
+      - "lib"
+    artifact_patterns:
+      - "dist/**/*"
+      - "build/**/*"
+    clean_command: "npm run clean || rm -rf dist build"
+    
+  dependencies:
+    lock_file: "package-lock.json"
+    lock_file_format: "json"
+    resolve_command: "npm install"
+    check_command: "npm ls"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: false
+      build_output_check: true
+      commands:
+        - name: "check_package_vs_lock"
+          type: "timestamp_compare"
+          source: "package.json"
+          target: "package-lock.json"
+          description: "Check if package.json is newer than lock file"
+          
+        - name: "check_package_vs_build"
+          type: "timestamp_compare"
+          source: "package.json"
+          target_pattern: "dist/**/*"
+          description: "Check if build artifacts are stale"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "process\\.env\\.([A-Z_][A-Z0-9_]*)"
+      - "\\$\\{([A-Z_][A-Z0-9_]*)\\}"
+      - "process\\.env\\[['\"]([A-Z_][A-Z0-9_]*)['\"]\\]"
+    config_files:
+      - ".env"
+      - ".env.local"
+      - ".env.*"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "node"
+        type: "command"
+        check_command: "node --version"
+        version_extract: "v(\\d+\\.\\d+\\.\\d+)"
+        
+      - name: "npm"
+        type: "command"
+        check_command: "npm --version"
+        version_extract: "(\\d+\\.\\d+\\.\\d+)"
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_lock"
+        command: "npm install"
+        verify_command: "npm ls --depth=0"
+        description: "Update package-lock.json to match package.json"
+        
+      - issue_type: "stale_build"
+        command: "npm run build"
+        verify_command: "test -d dist || test -d build"
+        description: "Rebuild stale artifacts"
+

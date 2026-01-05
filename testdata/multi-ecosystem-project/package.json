@@ -1,0 +1,6 @@
+{
+  "name": "multi-ecosystem-project",
+  "version": "1.0.0",
+  "description": "Project with both Maven and npm"
+}
+
