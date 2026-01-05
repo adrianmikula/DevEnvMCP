@@ -1,0 +1,95 @@
+ecosystem:
+  name: "Conda"
+  id: "conda"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "environment.yml"
+      - "conda-lock.yml"
+      - "environment.yaml"
+      - ".condarc"
+    required_files: []
+    optional_files:
+      - "environment.yml"
+      - "environment.yaml"
+      - "conda-lock.yml"
+      - ".condarc"
+    directory_patterns:
+      - "conda-meta"
+      - "pkgs"
+      
+  manifest:
+    primary_file: "environment.yml"
+    location: "."
+    format: "yaml"
+    
+  cache:
+    locations:
+      - "${HOME}/.conda/pkgs"
+      - "${HOME}/anaconda3/pkgs"
+      - "${HOME}/miniconda3/pkgs"
+      - "${CONDA_PREFIX}/pkgs"
+    structure: "hierarchical"
+    artifact_pattern: ".*\\.tar\\.bz2$|.*\\.conda$"
+    
+  build:
+    output_directories:
+      - "dist"
+      - "build"
+    artifact_patterns:
+      - "dist/**/*.tar.bz2"
+      - "dist/**/*.conda"
+    clean_command: "conda clean --all || rm -rf dist build"
+    
+  dependencies:
+    lock_file: "conda-lock.yml"
+    lock_file_format: "yaml"
+    resolve_command: "conda env create -f environment.yml"
+    check_command: "conda list"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: false
+      build_output_check: true
+      commands:
+        - name: "check_environment_vs_cache"
+          type: "timestamp_compare"
+          source: "environment.yml"
+          target_pattern: "${HOME}/.conda/pkgs/**/*"
+          description: "Check if environment.yml is newer than conda cache"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "os\\.getenv\\(['\"]([A-Z_][A-Z0-9_]*)['\"]\\)"
+      - "os\\.environ\\[['\"]([A-Z_][A-Z0-9_]*)['\"]\\]"
+      - "CONDA_([A-Z_][A-Z0-9_]*)"
+    config_files:
+      - ".env"
+      - ".condarc"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "conda"
+        type: "command"
+        check_command: "conda --version"
+        version_extract: "conda (\\d+\\.\\d+\\.\\d+)"
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_environment"
+        command: "conda env update -f environment.yml"
+        verify_command: "conda env list"
+        description: "Update conda environment from environment.yml"
+        
+      - issue_type: "stale_build"
+        command: "conda build ."
+        verify_command: "test -d dist"
+        description: "Rebuild Conda package artifacts"
+

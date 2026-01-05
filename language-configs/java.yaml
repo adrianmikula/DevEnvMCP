@@ -1,0 +1,88 @@
+ecosystem:
+  name: "Java"
+  id: "java"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "*.java"
+      - "pom.xml"
+      - "build.gradle"
+      - "build.gradle.kts"
+    required_files: []
+    optional_files:
+      - "*.java"
+      - "pom.xml"
+      - "build.gradle"
+      - "build.gradle.kts"
+    directory_patterns:
+      - "src/main/java"
+      - "src/test/java"
+      
+  manifest:
+    primary_file: "*.java"
+    location: "src/main/java"
+    format: "java"
+    
+  cache:
+    locations:
+      - "${HOME}/.m2/repository"
+      - "${HOME}/.gradle/caches"
+    structure: "hierarchical"
+    artifact_pattern: ".*\\.jar$|.*\\.class$"
+    
+  build:
+    output_directories:
+      - "target/classes"
+      - "build/classes"
+    artifact_patterns:
+      - "target/**/*.class"
+      - "build/**/*.class"
+    clean_command: "mvn clean || gradle clean"
+    
+  dependencies:
+    lock_file: ""
+    lock_file_format: ""
+    resolve_command: "mvn dependency:resolve || gradle dependencies"
+    check_command: "mvn dependency:tree || gradle dependencyInsight"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: true
+      build_output_check: true
+      commands:
+        - name: "check_java_vs_class"
+          type: "timestamp_compare"
+          source_pattern: "**/*.java"
+          target_pattern: "target/**/*.class"
+          description: "Check if Java source files are newer than compiled classes"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "System\\.getenv\\(\"([A-Z_][A-Z0-9_]*)['\"]\\)"
+      - "System\\.getProperty\\(\"([A-Z_][A-Z0-9_]*)\"\\)"
+      - "\\$\\{([A-Z_][A-Z0-9_]*)\\}"
+    config_files:
+      - "src/main/resources/application.properties"
+      - "src/main/resources/application.yml"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "java"
+        type: "command"
+        check_command: "java -version"
+        version_extract: "version \"(\\d+\\.\\d+)\""
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_build"
+        command: "mvn clean compile || gradle compileJava"
+        verify_command: "test -d target/classes || test -d build/classes"
+        description: "Recompile Java source files"
+

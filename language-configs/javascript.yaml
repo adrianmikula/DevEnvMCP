@@ -1,0 +1,90 @@
+ecosystem:
+  name: "JavaScript"
+  id: "javascript"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "*.js"
+      - "*.ts"
+      - "*.jsx"
+      - "*.tsx"
+      - "package.json"
+    required_files: []
+    optional_files:
+      - "*.js"
+      - "*.ts"
+      - "*.jsx"
+      - "*.tsx"
+      - "package.json"
+    directory_patterns:
+      - "node_modules"
+      - "src"
+      
+  manifest:
+    primary_file: "package.json"
+    location: "."
+    format: "json"
+    
+  cache:
+    locations:
+      - "${HOME}/.npm"
+      - "${APPDATA}/npm-cache"
+    structure: "flat"
+    artifact_pattern: ".*"
+    
+  build:
+    output_directories:
+      - "dist"
+      - "build"
+      - "lib"
+    artifact_patterns:
+      - "dist/**/*"
+      - "build/**/*"
+    clean_command: "rm -rf dist build lib node_modules"
+    
+  dependencies:
+    lock_file: "package-lock.json"
+    lock_file_format: "json"
+    resolve_command: "npm install"
+    check_command: "npm ls"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: false
+      build_output_check: true
+      commands:
+        - name: "check_js_vs_build"
+          type: "timestamp_compare"
+          source_pattern: "**/*.js"
+          target_pattern: "dist/**/*"
+          description: "Check if JavaScript source files are newer than build output"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "process\\.env\\.([A-Z_][A-Z0-9_]*)"
+      - "process\\.env\\[['\"]([A-Z_][A-Z0-9_]*)['\"]\\]"
+    config_files:
+      - ".env"
+      - ".env.local"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "node"
+        type: "command"
+        check_command: "node --version"
+        version_extract: "v(\\d+\\.\\d+\\.\\d+)"
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_build"
+        command: "npm run build"
+        verify_command: "test -d dist || test -d build"
+        description: "Rebuild JavaScript artifacts"
+

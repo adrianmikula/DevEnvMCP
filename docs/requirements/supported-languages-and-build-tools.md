@@ -115,6 +115,37 @@ The Sentinel will support the following Node.js package managers:
 
 ---
 
+### Poetry Ecosystem
+
+#### Package Manager
+- **Poetry** (`pyproject.toml`, `poetry.lock`)
+  - Detection: `pyproject.toml` with Poetry configuration
+  - Build output: `dist/`
+  - Cache location: `~/.cache/pypoetry`
+  - Lock file: `poetry.lock`
+
+#### Key Features
+- Verify `pyproject.toml` vs. `poetry.lock` freshness
+- Check Poetry cache vs. dependencies
+- Poetry-specific build verification
+
+---
+
+### Conda Ecosystem
+
+#### Package Manager
+- **Conda** (`environment.yml`, `conda-lock.yml`)
+  - Detection: `environment.yml` or `conda-lock.yml`
+  - Cache location: `~/.conda/pkgs`, `~/anaconda3/pkgs`
+  - Environment management
+
+#### Key Features
+- Verify environment.yml vs. conda cache
+- Check conda environment consistency
+- Conda package build verification
+
+---
+
 ### Docker Ecosystem
 
 #### Containerization
@@ -164,6 +195,94 @@ The Sentinel will support the following Node.js package managers:
 - Verify .csproj vs. compiled DLLs
 - Check C# source files vs. build output
 - NuGet package cache verification
+
+---
+
+### Webpack Ecosystem
+
+#### Build Tool
+- **Webpack** (`webpack.config.js`, `webpack.config.ts`)
+  - Detection: `webpack.config.*` files
+  - Build output: `dist/`, `build/`
+  - Cache location: `node_modules/.cache/webpack`
+
+#### Key Features
+- Verify webpack config vs. build output
+- Check source files vs. webpack bundles
+- Webpack cache verification
+
+---
+
+### Rollup Ecosystem
+
+#### Build Tool
+- **Rollup** (`rollup.config.js`, `rollup.config.ts`)
+  - Detection: `rollup.config.*` files
+  - Build output: `dist/`, `build/`
+  - Cache location: `node_modules/.cache/rollup`
+
+#### Key Features
+- Verify rollup config vs. build output
+- Check source files vs. rollup bundles
+
+---
+
+### Sass/SCSS Ecosystem
+
+#### Preprocessor
+- **Sass/SCSS** (`*.scss`, `*.sass`)
+  - Detection: `*.scss` or `*.sass` files
+  - Build output: `dist/css/`, `build/css/`, `public/css/`
+  - Compiles to CSS
+
+#### Key Features
+- Verify SCSS/Sass source vs. compiled CSS
+- Check for stale CSS files
+
+---
+
+### Spring Framework Ecosystem
+
+#### Framework
+- **Spring Framework** (Spring Boot, Spring MVC)
+  - Detection: `application.properties`, `application.yml`, Spring dependencies in `pom.xml`/`build.gradle`
+  - Build output: `target/*.jar`, `target/*.war`
+  - Configuration: `application.properties`, `application.yml`
+
+#### Key Features
+- Verify Spring config files vs. compiled classes
+- Check Java source vs. build artifacts
+- Spring-specific environment variable detection
+
+---
+
+### Apache Tomcat Ecosystem
+
+#### Application Server
+- **Apache Tomcat** (Servlet container)
+  - Detection: `web.xml`, `context.xml`, `server.xml`, WAR files
+  - Build output: `target/*.war`
+  - Configuration: `web.xml`, `context.xml`, `server.xml`
+
+#### Key Features
+- Verify web.xml vs. WAR file freshness
+- Check Java source vs. WAR artifacts
+- Tomcat-specific environment variables
+
+---
+
+### JBoss/WildFly Ecosystem
+
+#### Application Server
+- **JBoss/WildFly** (Enterprise application server)
+  - Detection: `jboss-web.xml`, `jboss-deployment-structure.xml`, `standalone.xml`
+  - Build output: `target/*.war`, `target/*.ear`
+  - Configuration: `jboss-web.xml`, `standalone.xml`, `domain.xml`
+
+#### Key Features
+- Verify JBoss config files vs. WAR/EAR files
+- Check Java source vs. deployment artifacts
+- JBoss/WildFly-specific environment variables
 
 ---
 
@@ -230,5 +349,6 @@ The Sentinel will verify:
 
 - **v1.0** (Phase 1): Java (Maven, Gradle) and npm (npm, Yarn, pnpm)
 - **v2.0** (Phase 2): React, Vite, Python, Docker, PostgreSQL, C# (.NET) support
+- **v2.1** (Phase 2 Extended): Poetry, Conda, Webpack, Rollup, Sass, Spring, Tomcat, JBoss support
 - **v3.0** (Phase 3): C++, Rust, Go, Ruby, PHP, Swift, Kotlin, Scala (Planned)
 

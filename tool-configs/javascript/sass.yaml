@@ -1,0 +1,98 @@
+ecosystem:
+  name: "Sass/SCSS"
+  id: "sass"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "*.scss"
+      - "*.sass"
+      - "sass.config.js"
+      - "sass.config.ts"
+    required_files: []
+    optional_files:
+      - "*.scss"
+      - "*.sass"
+      - "sass.config.js"
+      - "sass.config.ts"
+      - "package.json"
+    directory_patterns:
+      - "scss"
+      - "sass"
+      - "styles"
+      - "src/styles"
+      
+  manifest:
+    primary_file: "*.scss"
+    location: "."
+    format: "scss"
+    
+  cache:
+    locations:
+      - "node_modules/.cache/sass"
+    structure: "flat"
+    artifact_pattern: ".*\\.css$"
+    
+  build:
+    output_directories:
+      - "dist/css"
+      - "build/css"
+      - "public/css"
+      - "assets/css"
+    artifact_patterns:
+      - "dist/**/*.css"
+      - "build/**/*.css"
+      - "public/**/*.css"
+      - "assets/**/*.css"
+    clean_command: "rm -rf dist/css build/css public/css assets/css node_modules/.cache/sass"
+    
+  dependencies:
+    lock_file: "package-lock.json"
+    lock_file_format: "json"
+    resolve_command: "npm install"
+    check_command: "npm ls sass || npm ls node-sass"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: false
+      build_output_check: true
+      commands:
+        - name: "check_scss_vs_css"
+          type: "timestamp_compare"
+          source_pattern: "**/*.scss"
+          target_pattern: "**/*.css"
+          description: "Check if SCSS source files are newer than compiled CSS"
+          
+        - name: "check_sass_vs_css"
+          type: "timestamp_compare"
+          source_pattern: "**/*.sass"
+          target_pattern: "**/*.css"
+          description: "Check if Sass source files are newer than compiled CSS"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "process\\.env\\.([A-Z_][A-Z0-9_]*)"
+    config_files:
+      - ".env"
+      - "sass.config.js"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "sass"
+        type: "command"
+        check_command: "npx sass --version || sass --version"
+        version_extract: "(\\d+\\.\\d+\\.\\d+)"
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_css"
+        command: "npm run build:css || npx sass src:dist/css"
+        verify_command: "test -d dist/css || test -d build/css"
+        description: "Recompile Sass/SCSS to CSS"
+

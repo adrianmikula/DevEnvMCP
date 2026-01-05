@@ -1,0 +1,111 @@
+ecosystem:
+  name: "JBoss/WildFly"
+  id: "jboss"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "pom.xml"
+      - "build.gradle"
+      - "jboss-deployment-structure.xml"
+      - "jboss-web.xml"
+      - "standalone.xml"
+      - "domain.xml"
+    required_files: []
+    optional_files:
+      - "pom.xml"
+      - "build.gradle"
+      - "jboss-deployment-structure.xml"
+      - "jboss-web.xml"
+      - "standalone.xml"
+      - "domain.xml"
+      - "src/main/webapp/WEB-INF/jboss-web.xml"
+    directory_patterns:
+      - "src/main/webapp"
+      - "WEB-INF"
+      - "META-INF"
+      
+  manifest:
+    primary_file: "jboss-web.xml"
+    location: "src/main/webapp/WEB-INF"
+    format: "xml"
+    
+  cache:
+    locations:
+      - "${JBOSS_HOME}/standalone/data"
+      - "${JBOSS_HOME}/domain/data"
+      - "${WILDFLY_HOME}/standalone/data"
+      - "${HOME}/.m2/repository"
+    structure: "hierarchical"
+    artifact_pattern: ".*\\.war$|.*\\.ear$|.*\\.jar$"
+    
+  build:
+    output_directories:
+      - "target/*.war"
+      - "target/*.ear"
+      - "build/libs/*.war"
+    artifact_patterns:
+      - "target/*.war"
+      - "target/*.ear"
+      - "build/libs/*.war"
+    clean_command: "mvn clean || gradle clean"
+    
+  dependencies:
+    lock_file: ""
+    lock_file_format: ""
+    resolve_command: "mvn dependency:resolve || gradle dependencies"
+    check_command: "mvn dependency:tree || gradle dependencyInsight"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: true
+      build_output_check: true
+      commands:
+        - name: "check_jboss_config_vs_war"
+          type: "timestamp_compare"
+          source_pattern: "**/jboss-*.xml"
+          target_pattern: "target/*.war"
+          description: "Check if JBoss config files are newer than WAR file"
+          
+        - name: "check_java_vs_war"
+          type: "timestamp_compare"
+          source_pattern: "**/*.java"
+          target_pattern: "target/*.war"
+          description: "Check if Java source files are newer than WAR file"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "\\$\\{([A-Z_][A-Z0-9_]*)\\}"
+      - "JBOSS_([A-Z_][A-Z0-9_]*)"
+      - "WILDFLY_([A-Z_][A-Z0-9_]*)"
+    config_files:
+      - "jboss-deployment-structure.xml"
+      - "jboss-web.xml"
+      - "standalone.xml"
+      - "domain.xml"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "jboss"
+        type: "command"
+        check_command: "${JBOSS_HOME}/bin/standalone.sh --version || ${WILDFLY_HOME}/bin/standalone.sh --version"
+        version_extract: "WildFly (\\d+\\.\\d+\\.\\d+)"
+        
+      - name: "java"
+        type: "command"
+        check_command: "java -version"
+        version_extract: "version \"(\\d+\\.\\d+)\""
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_war"
+        command: "mvn clean package || gradle war"
+        verify_command: "test -f target/*.war || test -f build/libs/*.war"
+        description: "Rebuild JBoss/WildFly WAR file"
+

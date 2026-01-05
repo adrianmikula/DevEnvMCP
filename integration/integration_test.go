@@ -5,6 +5,7 @@ package integration
 
 import (
 	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,11 +14,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
-	"github.com/testcontainers/testcontainers-go/container/wait"
+	"github.com/testcontainers/testcontainers-go/wait"
 
 	"dev-env-sentinel/internal/config"
 	"dev-env-sentinel/internal/detector"
-	"dev-env-sentinel/internal/verifier"
 )
 
 // skipIfShort skips the test if -short flag is set
@@ -29,18 +29,11 @@ func skipIfShort(t *testing.T) {
 
 // setupMavenContainer creates a container with Maven installed
 func setupMavenContainer(ctx context.Context, t *testing.T) (testcontainers.Container, string) {
-	// Create a temporary directory for the project
-	tmpDir := t.TempDir()
-	
 	req := testcontainers.ContainerRequest{
-		Image:        "maven:3.9-eclipse-temurin-17",
-		Cmd:          []string{"tail", "-f", "/dev/null"}, // Keep container running
-		WaitingFor:   wait.ForLog("").WithStartupTimeout(30 * time.Second),
-		AutoRemove:   true,
-		AttachStdout: true,
-		AttachStderr: true,
-		// Note: Mounts would require additional setup
-		// For now, we'll use exec to create files
+		Image:      "maven:3.9-eclipse-temurin-17",
+		Cmd:        []string{"tail", "-f", "/dev/null"}, // Keep container running
+		WaitingFor: wait.ForLog("").WithStartupTimeout(30 * time.Second),
+		AutoRemove: true,
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -57,12 +50,10 @@ func setupMavenContainer(ctx context.Context, t *testing.T) (testcontainers.Cont
 // setupNodeContainer creates a container with Node.js/npm installed
 func setupNodeContainer(ctx context.Context, t *testing.T) (testcontainers.Container, string) {
 	req := testcontainers.ContainerRequest{
-		Image:        "node:20-alpine",
-		Cmd:          []string{"tail", "-f", "/dev/null"}, // Keep container running
-		WaitingFor:   wait.ForLog("").WithStartupTimeout(30 * time.Second),
-		AutoRemove:   true,
-		AttachStdout: true,
-		AttachStderr: true,
+		Image:      "node:20-alpine",
+		Cmd:        []string{"tail", "-f", "/dev/null"}, // Keep container running
+		WaitingFor: wait.ForLog("").WithStartupTimeout(30 * time.Second),
+		AutoRemove: true,
 	}
 
 	container, err := testcontainers.GenericContainer(ctx, testcontainers.GenericContainerRequest{
@@ -77,24 +68,19 @@ func setupNodeContainer(ctx context.Context, t *testing.T) (testcontainers.Conta
 
 // execCommand executes a command in the container and returns stdout, stderr, and exit code
 func execCommand(ctx context.Context, container testcontainers.Container, cmd []string) (string, string, int, error) {
-	execResult, err := container.Exec(ctx, cmd)
+	exitCode, stdoutReader, err := container.Exec(ctx, cmd)
 	if err != nil {
-		return "", "", -1, err
+		return "", "", exitCode, err
 	}
 
 	// Read stdout
-	stdoutBytes, err := execResult.Stdout(ctx)
+	stdoutBytes, err := io.ReadAll(stdoutReader)
 	if err != nil {
-		return "", "", execResult.ExitCode, err
+		return "", "", exitCode, err
 	}
 
-	// Read stderr
-	stderrBytes, err := execResult.Stderr(ctx)
-	if err != nil {
-		return string(stdoutBytes), "", execResult.ExitCode, err
-	}
-
-	return string(stdoutBytes), string(stderrBytes), execResult.ExitCode, nil
+	// stderr is typically combined with stdout in testcontainers
+	return string(stdoutBytes), "", exitCode, nil
 }
 
 
@@ -104,8 +90,7 @@ func TestIntegration_DetectMavenProject(t *testing.T) {
 	ctx := context.Background()
 	container, workDir := setupMavenContainer(ctx, t)
 	defer func() {
-		err := container.Terminate(ctx)
-		require.NoError(t, err)
+		_ = container.Terminate(ctx) // Ignore errors during cleanup
 	}()
 
 	// Create a simple Maven project structure
@@ -128,10 +113,6 @@ func TestIntegration_DetectMavenProject(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, 0, exitCode)
 
-	// Load ecosystem configs
-	configs, err := config.DiscoverEcosystemConfigs("ecosystem-configs")
-	require.NoError(t, err)
-
 	// For this test, we'll simulate by copying files locally and testing
 	// In a real scenario, you'd mount volumes or copy files properly
 	t.Log("Maven container setup complete")
@@ -144,8 +125,7 @@ func TestIntegration_DetectNpmProject(t *testing.T) {
 	ctx := context.Background()
 	container, workDir := setupNodeContainer(ctx, t)
 	defer func() {
-		err := container.Terminate(ctx)
-		require.NoError(t, err)
+		_ = container.Terminate(ctx) // Ignore errors during cleanup
 	}()
 
 	// Create a simple npm project
@@ -179,8 +159,7 @@ func TestIntegration_RealMavenBuild(t *testing.T) {
 	ctx := context.Background()
 	container, workDir := setupMavenContainer(ctx, t)
 	defer func() {
-		err := container.Terminate(ctx)
-		require.NoError(t, err)
+		_ = container.Terminate(ctx) // Ignore errors during cleanup
 	}()
 
 	// Create a minimal Maven project with source code
@@ -237,8 +216,7 @@ func TestIntegration_RealNpmBuild(t *testing.T) {
 	ctx := context.Background()
 	container, workDir := setupNodeContainer(ctx, t)
 	defer func() {
-		err := container.Terminate(ctx)
-		require.NoError(t, err)
+		_ = container.Terminate(ctx) // Ignore errors during cleanup
 	}()
 
 	// Create a minimal npm project
@@ -277,19 +255,50 @@ func TestIntegration_EcosystemDetectionWithRealProject(t *testing.T) {
 	skipIfShort(t)
 
 	// Use local testdata for this test (faster than containers)
-	projectRoot := filepath.Join("testdata", "java-maven-project")
+	projectRoot := filepath.Join("..", "testdata", "java-maven-project")
 	if _, err := os.Stat(projectRoot); os.IsNotExist(err) {
-		t.Skip("testdata not available")
+		// Try alternative path (when running from project root)
+		projectRoot = filepath.Join("testdata", "java-maven-project")
+		if _, err := os.Stat(projectRoot); os.IsNotExist(err) {
+			t.Skip("testdata not available")
+		}
 	}
 
-	// Load ecosystem configs
-	configs, err := config.DiscoverEcosystemConfigs("ecosystem-configs")
+	// Load ecosystem configs (try relative to project root)
+	configDir := filepath.Join("..", "ecosystem-configs")
+	if _, err := os.Stat(configDir); os.IsNotExist(err) {
+		configDir = "ecosystem-configs" // Try current directory
+		if _, err := os.Stat(configDir); os.IsNotExist(err) {
+			// Try absolute path from current working directory
+			wd, _ := os.Getwd()
+			configDir = filepath.Join(wd, "ecosystem-configs")
+		}
+	}
+	t.Logf("Loading configs from: %s", configDir)
+	configs, err := config.DiscoverEcosystemConfigs(configDir)
 	require.NoError(t, err)
-	require.NotEmpty(t, configs)
+	require.NotEmpty(t, configs, "Should load at least one config file")
 
 	// Detect ecosystems
 	ecosystems, err := detector.DetectEcosystems(projectRoot, configs)
 	require.NoError(t, err)
+	
+	// Log what was found for debugging
+	if len(ecosystems) == 0 {
+		t.Logf("No ecosystems detected. Project root: %s", projectRoot)
+		t.Logf("Configs loaded: %d", len(configs))
+		for _, cfg := range configs {
+			t.Logf("  - Config ID: %s, Required files: %v", cfg.Ecosystem.ID, cfg.Ecosystem.Detection.RequiredFiles)
+		}
+		// Check if pom.xml exists
+		pomPath := filepath.Join(projectRoot, "pom.xml")
+		if _, err := os.Stat(pomPath); os.IsNotExist(err) {
+			t.Logf("pom.xml not found at: %s", pomPath)
+		} else {
+			t.Logf("pom.xml exists at: %s", pomPath)
+		}
+	}
+	
 	require.NotEmpty(t, ecosystems, "Should detect at least one ecosystem")
 
 	// Verify it detected Maven
@@ -310,8 +319,7 @@ func TestIntegration_BuildFreshnessWithRealMavenProject(t *testing.T) {
 	ctx := context.Background()
 	container, workDir := setupMavenContainer(ctx, t)
 	defer func() {
-		err := container.Terminate(ctx)
-		require.NoError(t, err)
+		_ = container.Terminate(ctx) // Ignore errors during cleanup
 	}()
 
 	// Create Maven project
@@ -362,15 +370,26 @@ func TestIntegration_BuildFreshnessWithRealMavenProject(t *testing.T) {
 	// Since we can't easily access container files from Go, we'll test the logic
 	// In a real scenario, you'd mount volumes or use file copy mechanisms
 
-	// Load config and create ecosystem
-	configs, err := config.DiscoverEcosystemConfigs("ecosystem-configs")
+	// Load config and create ecosystem (try relative to project root)
+	configDir := filepath.Join("..", "ecosystem-configs")
+	if _, err := os.Stat(configDir); os.IsNotExist(err) {
+		configDir = "ecosystem-configs" // Try current directory
+	}
+	configs, err := config.DiscoverEcosystemConfigs(configDir)
 	require.NoError(t, err)
+	require.NotEmpty(t, configs, "Should load at least one config")
 
 	var mavenConfig *config.EcosystemConfig
 	for _, cfg := range configs {
 		if cfg.Ecosystem.ID == "java-maven" {
 			mavenConfig = cfg
 			break
+		}
+	}
+	if mavenConfig == nil {
+		t.Logf("Available config IDs:")
+		for _, cfg := range configs {
+			t.Logf("  - %s", cfg.Ecosystem.ID)
 		}
 	}
 	require.NotNil(t, mavenConfig, "Maven config should be found")

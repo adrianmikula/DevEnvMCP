@@ -1,0 +1,107 @@
+ecosystem:
+  name: "Apache Tomcat"
+  id: "tomcat"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "pom.xml"
+      - "build.gradle"
+      - "context.xml"
+      - "server.xml"
+      - "web.xml"
+    required_files: []
+    optional_files:
+      - "pom.xml"
+      - "build.gradle"
+      - "context.xml"
+      - "server.xml"
+      - "web.xml"
+      - "src/main/webapp/WEB-INF/web.xml"
+    directory_patterns:
+      - "src/main/webapp"
+      - "WEB-INF"
+      - "META-INF"
+      
+  manifest:
+    primary_file: "web.xml"
+    location: "src/main/webapp/WEB-INF"
+    format: "xml"
+    
+  cache:
+    locations:
+      - "${CATALINA_HOME}/work"
+      - "${CATALINA_BASE}/work"
+      - "${HOME}/.m2/repository"
+    structure: "hierarchical"
+    artifact_pattern: ".*\\.war$|.*\\.jar$"
+    
+  build:
+    output_directories:
+      - "target/*.war"
+      - "build/libs/*.war"
+      - "target/tomcat"
+    artifact_patterns:
+      - "target/*.war"
+      - "build/libs/*.war"
+    clean_command: "mvn clean || gradle clean"
+    
+  dependencies:
+    lock_file: ""
+    lock_file_format: ""
+    resolve_command: "mvn dependency:resolve || gradle dependencies"
+    check_command: "mvn dependency:tree || gradle dependencyInsight"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: true
+      build_output_check: true
+      commands:
+        - name: "check_web_xml_vs_war"
+          type: "timestamp_compare"
+          source_pattern: "**/web.xml"
+          target_pattern: "target/*.war"
+          description: "Check if web.xml is newer than WAR file"
+          
+        - name: "check_java_vs_war"
+          type: "timestamp_compare"
+          source_pattern: "**/*.java"
+          target_pattern: "target/*.war"
+          description: "Check if Java source files are newer than WAR file"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "\\$\\{([A-Z_][A-Z0-9_]*)\\}"
+      - "CATALINA_([A-Z_][A-Z0-9_]*)"
+      - "TOMCAT_([A-Z_][A-Z0-9_]*)"
+    config_files:
+      - "context.xml"
+      - "server.xml"
+      - "web.xml"
+      - "catalina.properties"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "tomcat"
+        type: "command"
+        check_command: "catalina.sh version || ${CATALINA_HOME}/bin/catalina.sh version"
+        version_extract: "Apache Tomcat/(\\d+\\.\\d+\\.\\d+)"
+        
+      - name: "java"
+        type: "command"
+        check_command: "java -version"
+        version_extract: "version \"(\\d+\\.\\d+)\""
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_war"
+        command: "mvn clean package || gradle war"
+        verify_command: "test -f target/*.war || test -f build/libs/*.war"
+        description: "Rebuild Tomcat WAR file"
+

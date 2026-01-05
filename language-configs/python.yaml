@@ -5,59 +5,47 @@ ecosystem:
   
   detection:
     manifest_files:
+      - "*.py"
       - "requirements.txt"
       - "pyproject.toml"
       - "setup.py"
-      - "Pipfile"
-      - "poetry.lock"
-      - "setup.cfg"
     required_files: []
     optional_files:
+      - "*.py"
       - "requirements.txt"
       - "pyproject.toml"
       - "setup.py"
-      - "Pipfile"
-      - "poetry.lock"
-      - "setup.cfg"
-      - "requirements-dev.txt"
-      - "requirements-prod.txt"
     directory_patterns:
       - "__pycache__"
-      - "*.egg-info"
       - ".venv"
       - "venv"
-      - "env"
       
   manifest:
-    primary_file: "requirements.txt"
+    primary_file: "*.py"
     location: "."
-    format: "text"
+    format: "python"
     
   cache:
     locations:
       - "${HOME}/.cache/pip"
       - "${APPDATA}/pip"
-      - "${HOME}/.cache/poetry"
-      - "${HOME}/Library/Caches/pip"
     structure: "flat"
     artifact_pattern: ".*\\.whl$|.*\\.tar\\.gz$"
     
   build:
     output_directories:
+      - "__pycache__"
       - "dist"
       - "build"
-      - "__pycache__"
-      - "*.egg-info"
     artifact_patterns:
+      - "**/__pycache__/**/*.pyc"
       - "dist/**/*"
       - "build/**/*"
-      - "**/__pycache__/**/*"
-      - "**/*.egg-info"
-    clean_command: "python -m pip cache purge || rm -rf dist build *.egg-info **/__pycache__"
+    clean_command: "python -m pip cache purge || rm -rf dist build **/__pycache__"
     
   dependencies:
-    lock_file: "poetry.lock"
-    lock_file_format: "toml"
+    lock_file: ""
+    lock_file_format: ""
     resolve_command: "pip install -r requirements.txt"
     check_command: "pip list"
     
@@ -67,19 +55,7 @@ ecosystem:
       cache_timestamp_check: false
       build_output_check: true
       commands:
-        - name: "check_requirements_vs_cache"
-          type: "timestamp_compare"
-          source: "requirements.txt"
-          target_pattern: "${HOME}/.cache/pip/**/*"
-          description: "Check if requirements.txt is newer than pip cache"
-          
-        - name: "check_pyproject_vs_build"
-          type: "timestamp_compare"
-          source: "pyproject.toml"
-          target_pattern: "dist/**/*"
-          description: "Check if pyproject.toml is newer than build artifacts"
-          
-        - name: "check_source_vs_pycache"
+        - name: "check_py_vs_pycache"
           type: "timestamp_compare"
           source_pattern: "**/*.py"
           target_pattern: "**/__pycache__/**/*.pyc"
@@ -97,7 +73,6 @@ ecosystem:
     config_files:
       - ".env"
       - ".env.local"
-      - ".env.*"
       - "config.py"
       - "settings.py"
     required_vars: []
@@ -109,20 +84,10 @@ ecosystem:
         check_command: "python --version"
         version_extract: "Python (\\d+\\.\\d+\\.\\d+)"
         
-      - name: "pip"
-        type: "command"
-        check_command: "pip --version"
-        version_extract: "pip (\\d+\\.\\d+\\.\\d+)"
-        
   reconciliation:
     fixes:
-      - issue_type: "stale_cache"
-        command: "pip install --upgrade -r requirements.txt"
-        verify_command: "pip list"
-        description: "Update Python dependencies from requirements.txt"
-        
-      - issue_type: "stale_build"
-        command: "python -m build || python setup.py build"
-        verify_command: "test -d dist || test -d build"
-        description: "Rebuild Python package artifacts"
+      - issue_type: "stale_pycache"
+        command: "find . -type d -name __pycache__ -exec rm -r {} +"
+        verify_command: "test ! -d __pycache__"
+        description: "Clean Python bytecode cache"
 

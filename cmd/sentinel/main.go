@@ -21,8 +21,8 @@ func main() {
 
 // runMCPServer runs the MCP server
 func runMCPServer() {
-	// Load ecosystem configs
-	configs, err := config.DiscoverEcosystemConfigs("ecosystem-configs")
+	// Load ecosystem configs from language-configs and tool-configs directories
+	configs, err := config.DiscoverEcosystemConfigs(".")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "error loading configs: %v\n", err)
 		os.Exit(1)

@@ -1,0 +1,96 @@
+ecosystem:
+  name: "Poetry"
+  id: "poetry"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "pyproject.toml"
+      - "poetry.lock"
+    required_files:
+      - "pyproject.toml"
+    optional_files:
+      - "poetry.lock"
+    directory_patterns:
+      - ".venv"
+      - "venv"
+      
+  manifest:
+    primary_file: "pyproject.toml"
+    location: "."
+    format: "toml"
+    
+  cache:
+    locations:
+      - "${HOME}/.cache/pypoetry"
+      - "${HOME}/Library/Caches/pypoetry"
+      - "${APPDATA}/pypoetry/Cache"
+    structure: "hierarchical"
+    artifact_pattern: ".*\\.whl$|.*\\.tar\\.gz$"
+    
+  build:
+    output_directories:
+      - "dist"
+      - "build"
+    artifact_patterns:
+      - "dist/**/*.whl"
+      - "dist/**/*.tar.gz"
+    clean_command: "poetry cache clear pypi --all || rm -rf dist build"
+    
+  dependencies:
+    lock_file: "poetry.lock"
+    lock_file_format: "toml"
+    resolve_command: "poetry install"
+    check_command: "poetry show"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: false
+      build_output_check: true
+      commands:
+        - name: "check_pyproject_vs_lock"
+          type: "timestamp_compare"
+          source: "pyproject.toml"
+          target: "poetry.lock"
+          description: "Check if pyproject.toml is newer than poetry.lock"
+          
+        - name: "check_pyproject_vs_build"
+          type: "timestamp_compare"
+          source: "pyproject.toml"
+          target_pattern: "dist/**/*"
+          description: "Check if pyproject.toml is newer than build artifacts"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "os\\.getenv\\(['\"]([A-Z_][A-Z0-9_]*)['\"]\\)"
+      - "os\\.environ\\[['\"]([A-Z_][A-Z0-9_]*)['\"]\\]"
+    config_files:
+      - ".env"
+      - ".env.local"
+      - "poetry.toml"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "poetry"
+        type: "command"
+        check_command: "poetry --version"
+        version_extract: "Poetry \\(version (\\d+\\.\\d+\\.\\d+)\\)"
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_lock"
+        command: "poetry lock --no-update"
+        verify_command: "poetry check"
+        description: "Update poetry.lock to match pyproject.toml"
+        
+      - issue_type: "stale_build"
+        command: "poetry build"
+        verify_command: "test -d dist"
+        description: "Rebuild Poetry package artifacts"
+

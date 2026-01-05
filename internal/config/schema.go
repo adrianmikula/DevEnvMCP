@@ -20,6 +20,8 @@ type Ecosystem struct {
 	Environment    Environment    `yaml:"environment"`
 	Infrastructure Infrastructure `yaml:"infrastructure"`
 	Reconciliation Reconciliation `yaml:"reconciliation"`
+	VersionConfig  VersionConfig  `yaml:"version"`
+	Requirements   Requirements   `yaml:"requirements"`
 }
 
 // Detection defines how to detect this ecosystem
@@ -121,5 +123,44 @@ type Fix struct {
 	Command       string `yaml:"command"`
 	VerifyCommand string `yaml:"verify_command"`
 	Description   string `yaml:"description"`
+}
+
+// VersionConfig defines version management configuration
+type VersionConfig struct {
+	Language          string   `yaml:"language"`
+	VersionCommand    string   `yaml:"version_command"`
+	VersionPattern    string   `yaml:"version_pattern"`
+	RuntimePattern    string   `yaml:"runtime_pattern,omitempty"` // For Java and similar
+	VersionManagers   []VersionManager `yaml:"version_managers"`
+	RuntimeVariants   []RuntimeVariant `yaml:"runtime_variants,omitempty"` // For Java
+}
+
+// VersionManager defines a version management tool
+type VersionManager struct {
+	Name         string `yaml:"name"`
+	CheckCommand string `yaml:"check_command"`
+	ListCommand  string `yaml:"list_command"`
+	InstallCommand string `yaml:"install_command"` // Template: "install {version}"
+	SwitchCommand  string `yaml:"switch_command"`  // Template: "use {version}"
+	CurrentCommand string `yaml:"current_command,omitempty"`
+}
+
+// RuntimeVariant defines a runtime variant (e.g., Java runtimes)
+type RuntimeVariant struct {
+	Name        string   `yaml:"name"`
+	Provider    string   `yaml:"provider"`
+	Pattern     string   `yaml:"pattern"` // Regex to identify this variant
+	Compatible  bool     `yaml:"compatible"` // Generally compatible
+	Description string   `yaml:"description,omitempty"`
+}
+
+// Requirements defines version requirements
+type Requirements struct {
+	MinVersion       string   `yaml:"min_version,omitempty"`
+	MaxVersion       string   `yaml:"max_version,omitempty"`
+	PreferredVersions []string `yaml:"preferred_versions,omitempty"`
+	PreferredRuntimes []string `yaml:"preferred_runtimes,omitempty"` // For Java
+	ExcludedVersions  []string `yaml:"excluded_versions,omitempty"`
+	ExcludedRuntimes  []string `yaml:"excluded_runtimes,omitempty"` // For Java
 }
 

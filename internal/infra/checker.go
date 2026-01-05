@@ -36,6 +36,24 @@ func CheckInfrastructure(ctx context.Context, cfg *config.EcosystemConfig) (*Inf
 		Issues:    []string{},
 	}
 
+	// Check language version if configured
+	if cfg.Ecosystem.VersionConfig.Language != "" {
+		versionResult, err := CheckVersion(ctx, cfg)
+		if err == nil && versionResult.Detected {
+			if !versionResult.IsValid {
+				report.IsHealthy = false
+				report.Issues = append(report.Issues, "Language version incompatibility detected")
+				for _, issue := range versionResult.Issues {
+					report.Issues = append(report.Issues, fmt.Sprintf("  - %s", issue))
+				}
+				for _, suggestion := range versionResult.Suggestions {
+					report.Issues = append(report.Issues, fmt.Sprintf("  Suggestion: %s", suggestion))
+				}
+			}
+		}
+	}
+
+	// Check other services
 	for _, service := range cfg.Ecosystem.Infrastructure.Services {
 		status, err := checkService(ctx, service)
 		if err != nil {

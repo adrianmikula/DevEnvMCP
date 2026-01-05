@@ -71,10 +71,83 @@ ecosystem:
         check_command: "mvn --version"
         version_extract: "Apache Maven (\\d+\\.\\d+\\.\\d+)"
         
+  version:
+    language: "java"
+    version_command: "java -version 2>&1"
+    version_pattern: "(?:openjdk|java) version \"([^\"]+)\""
+    runtime_pattern: "(OpenJDK|Oracle|Eclipse Temurin|Amazon Corretto|Azul Zulu|Microsoft Build)"
+    version_managers:
+      - name: "sdkman"
+        check_command: "command -v sdk"
+        list_command: "sdk list java"
+        install_command: "sdk install java {version}"
+        switch_command: "sdk use java {version}"
+        current_command: "sdk current java"
+      - name: "jenv"
+        check_command: "command -v jenv"
+        list_command: "jenv versions"
+        install_command: "jenv install {version}"
+        switch_command: "jenv global {version}"
+        current_command: "jenv version-name"
+      - name: "asdf"
+        check_command: "command -v asdf"
+        list_command: "asdf list-all java"
+        install_command: "asdf install java {version}"
+        switch_command: "asdf global java {version}"
+        current_command: "asdf current java"
+    runtime_variants:
+      - name: "OpenJDK"
+        provider: "OpenJDK"
+        pattern: "(?i)openjdk"
+        compatible: true
+        description: "Open source reference implementation"
+      - name: "Oracle JDK"
+        provider: "Oracle"
+        pattern: "(?i)oracle"
+        compatible: true
+        description: "Oracle's commercial JDK"
+      - name: "Eclipse Temurin"
+        provider: "Adoptium"
+        pattern: "(?i)(temurin|adoptium)"
+        compatible: true
+        description: "Eclipse Adoptium's OpenJDK builds"
+      - name: "Amazon Corretto"
+        provider: "Amazon"
+        pattern: "(?i)corretto"
+        compatible: true
+        description: "Amazon's OpenJDK distribution"
+      - name: "Azul Zulu"
+        provider: "Azul"
+        pattern: "(?i)zulu"
+        compatible: true
+        description: "Azul's OpenJDK builds"
+      - name: "Microsoft Build"
+        provider: "Microsoft"
+        pattern: "(?i)microsoft"
+        compatible: true
+        description: "Microsoft's OpenJDK builds"
+        
+  requirements:
+    min_version: "11"
+    max_version: "21"
+    preferred_versions:
+      - "17"
+      - "21"
+    preferred_runtimes:
+      - "Eclipse Temurin"
+      - "OpenJDK"
+      - "Amazon Corretto"
+    excluded_versions: []
+    excluded_runtimes: []
+        
   reconciliation:
     fixes:
       - issue_type: "stale_cache"
         command: "mvn clean"
         verify_command: "mvn validate"
         description: "Clean Maven build artifacts"
+      - issue_type: "stale_build"
+        command: "mvn clean compile"
+        verify_command: "mvn validate"
+        description: "Rebuild Maven project"
 

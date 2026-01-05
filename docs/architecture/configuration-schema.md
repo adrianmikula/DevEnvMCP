@@ -4,8 +4,46 @@ This document defines the YAML schema for ecosystem configuration files.
 
 ## File Structure
 
-Ecosystem configuration files are stored in `ecosystem-configs/` directory and follow the naming pattern:
-- `{language}-{tool}.yaml` (e.g., `java-maven.yaml`, `npm.yaml`)
+Ecosystem configuration files are organized into two top-level directories:
+
+### Language Configs (`language-configs/`)
+
+Language-level configurations that define base language support:
+- `java.yaml` - Java language support
+- `python.yaml` - Python language support
+- `javascript.yaml` - JavaScript language support
+- `csharp.yaml` - C# language support
+
+### Tool Configs (`tool-configs/`)
+
+Tool-specific configurations organized by language in subdirectories:
+
+- `tool-configs/java/` - Java tools
+  - `maven.yaml` - Maven build tool
+  - `gradle.yaml` - Gradle build tool
+  - `spring.yaml` - Spring Framework
+  - `tomcat.yaml` - Apache Tomcat
+  - `jboss.yaml` - JBoss/WildFly
+
+- `tool-configs/python/` - Python tools
+  - `poetry.yaml` - Poetry package manager
+  - `conda.yaml` - Conda environment manager
+
+- `tool-configs/javascript/` - JavaScript tools
+  - `npm.yaml` - npm package manager
+  - `react.yaml` - React framework
+  - `vite.yaml` - Vite build tool
+  - `webpack.yaml` - Webpack bundler
+  - `rollup.yaml` - Rollup bundler
+  - `sass.yaml` - Sass/SCSS preprocessor
+
+- `tool-configs/docker/` - Docker tools
+  - `docker.yaml` - Docker and Docker Compose
+
+- `tool-configs/postgres/` - PostgreSQL tools
+  - `postgres.yaml` - PostgreSQL database
+
+The system automatically discovers all configs recursively from both directories.
 
 ## Root Schema
 

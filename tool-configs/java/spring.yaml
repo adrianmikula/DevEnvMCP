@@ -1,0 +1,110 @@
+ecosystem:
+  name: "Spring Framework"
+  id: "spring"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "pom.xml"
+      - "build.gradle"
+      - "application.properties"
+      - "application.yml"
+      - "application.yaml"
+    required_files: []
+    optional_files:
+      - "pom.xml"
+      - "build.gradle"
+      - "application.properties"
+      - "application.yml"
+      - "application.yaml"
+      - "src/main/resources/application.properties"
+      - "src/main/resources/application.yml"
+    directory_patterns:
+      - "src/main/java"
+      - "src/main/resources"
+      
+  manifest:
+    primary_file: "application.properties"
+    location: "src/main/resources"
+    format: "properties"
+    
+  cache:
+    locations:
+      - "${HOME}/.m2/repository"
+      - "${HOME}/.gradle/caches"
+    structure: "hierarchical"
+    artifact_pattern: ".*\\.jar$"
+    
+  build:
+    output_directories:
+      - "target/classes"
+      - "build/classes"
+      - "target/spring-boot"
+    artifact_patterns:
+      - "target/*.jar"
+      - "target/*.war"
+      - "build/libs/*.jar"
+    clean_command: "mvn clean || gradle clean"
+    
+  dependencies:
+    lock_file: ""
+    lock_file_format: ""
+    resolve_command: "mvn dependency:resolve || gradle dependencies"
+    check_command: "mvn dependency:tree || gradle dependencyInsight"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: true
+      build_output_check: true
+      commands:
+        - name: "check_application_properties_vs_build"
+          type: "timestamp_compare"
+          source_pattern: "**/application.*"
+          target_pattern: "target/classes/**/*"
+          description: "Check if Spring config files are newer than compiled classes"
+          
+        - name: "check_java_vs_build"
+          type: "timestamp_compare"
+          source_pattern: "**/*.java"
+          target_pattern: "target/classes/**/*.class"
+          description: "Check if Java source files are newer than compiled classes"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "\\$\\{([A-Z_][A-Z0-9_]*)\\}"
+      - "@Value\\(\"\\$\\{([A-Z_][A-Z0-9_]*)\\}\"\\)"
+      - "@Value\\(['\"]([A-Z_][A-Z0-9_]*)['\"]\\)"
+      - "System\\.getenv\\(\"([A-Z_][A-Z0-9_]*)['\"]\\)"
+      - "System\\.getProperty\\(\"([A-Z_][A-Z0-9_]*)\"\\)"
+    config_files:
+      - "src/main/resources/application.properties"
+      - "src/main/resources/application.yml"
+      - "src/main/resources/application.yaml"
+      - "application.properties"
+      - "application.yml"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "java"
+        type: "command"
+        check_command: "java -version"
+        version_extract: "version \"(\\d+\\.\\d+)\""
+        
+      - name: "maven"
+        type: "command"
+        check_command: "mvn --version"
+        version_extract: "Apache Maven (\\d+\\.\\d+\\.\\d+)"
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_build"
+        command: "mvn clean install || gradle build"
+        verify_command: "test -d target || test -d build"
+        description: "Rebuild Spring application artifacts"
+

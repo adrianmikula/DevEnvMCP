@@ -1,0 +1,117 @@
+ecosystem:
+  name: "Webpack"
+  id: "webpack"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "webpack.config.js"
+      - "webpack.config.ts"
+      - "webpack.config.mjs"
+      - "webpack.config.cjs"
+      - "webpack.common.js"
+      - "webpack.prod.js"
+      - "webpack.dev.js"
+    required_files: []
+    optional_files:
+      - "webpack.config.js"
+      - "webpack.config.ts"
+      - "webpack.config.mjs"
+      - "webpack.config.cjs"
+      - "webpack.common.js"
+      - "webpack.prod.js"
+      - "webpack.dev.js"
+      - "package.json"
+    directory_patterns:
+      - "dist"
+      - "build"
+      - ".webpack"
+      
+  manifest:
+    primary_file: "webpack.config.js"
+    location: "."
+    format: "javascript"
+    
+  cache:
+    locations:
+      - "${HOME}/.cache/webpack"
+      - "node_modules/.cache/webpack"
+    structure: "flat"
+    artifact_pattern: ".*"
+    
+  build:
+    output_directories:
+      - "dist"
+      - "build"
+      - ".webpack"
+    artifact_patterns:
+      - "dist/**/*"
+      - "build/**/*"
+      - ".webpack/**/*"
+    clean_command: "rm -rf dist build .webpack node_modules/.cache/webpack"
+    
+  dependencies:
+    lock_file: "package-lock.json"
+    lock_file_format: "json"
+    resolve_command: "npm install"
+    check_command: "npm ls webpack"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: false
+      build_output_check: true
+      commands:
+        - name: "check_webpack_config_vs_build"
+          type: "timestamp_compare"
+          source_pattern: "webpack.config.*"
+          target_pattern: "dist/**/*"
+          description: "Check if webpack config is newer than build output"
+          
+        - name: "check_src_vs_build"
+          type: "timestamp_compare"
+          source_pattern: "src/**/*"
+          target_pattern: "dist/**/*"
+          description: "Check if source files are newer than webpack build output"
+          
+        - name: "check_package_vs_build"
+          type: "timestamp_compare"
+          source: "package.json"
+          target_pattern: "dist/**/*"
+          description: "Check if package.json is newer than build output"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "process\\.env\\.([A-Z_][A-Z0-9_]*)"
+      - "process\\.env\\[['\"]([A-Z_][A-Z0-9_]*)['\"]\\]"
+      - "webpack\\.DefinePlugin\\(.*['\"]([A-Z_][A-Z0-9_]*)['\"]"
+    config_files:
+      - ".env"
+      - ".env.local"
+      - ".env.development"
+      - ".env.production"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "node"
+        type: "command"
+        check_command: "node --version"
+        version_extract: "v(\\d+\\.\\d+\\.\\d+)"
+        
+      - name: "webpack"
+        type: "command"
+        check_command: "npx webpack --version || webpack --version"
+        version_extract: "(\\d+\\.\\d+\\.\\d+)"
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_build"
+        command: "npm run build || npx webpack"
+        verify_command: "test -d dist || test -d build"
+        description: "Rebuild webpack artifacts"
+
