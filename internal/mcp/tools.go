@@ -3,7 +3,9 @@ package mcp
 import (
 	"context"
 	"fmt"
+	"os"
 
+	"dev-env-sentinel/internal/apify"
 	"dev-env-sentinel/internal/auditor"
 	"dev-env-sentinel/internal/config"
 	"dev-env-sentinel/internal/detector"
@@ -15,26 +17,34 @@ import (
 
 // RegisterAllTools registers all MCP tools
 func RegisterAllTools(server *Server, configs []*config.EcosystemConfig) {
+	tracker := apify.NewEventTracker()
+
 	// Free tier tools
 	server.RegisterTool("verify_build_freshness", func(ctx context.Context, args map[string]interface{}) (interface{}, error) {
+		tracker.TrackEvent(apify.EventVerifyBuildFreshness, "verify_build_freshness", extractMetadata(args))
 		return handleVerifyBuildFreshness(args, configs)
 	})
 
 	server.RegisterTool("check_infrastructure_parity", func(ctx context.Context, args map[string]interface{}) (interface{}, error) {
+		tracker.TrackEvent(apify.EventCheckInfrastructure, "check_infrastructure_parity", extractMetadata(args))
 		return handleCheckInfrastructureParity(args, configs)
 	})
 
 	server.RegisterTool("env_var_audit", func(ctx context.Context, args map[string]interface{}) (interface{}, error) {
+		tracker.TrackEvent(apify.EventEnvVarAudit, "env_var_audit", extractMetadata(args))
 		return handleEnvVarAudit(args, configs)
 	})
 
 	// Premium tier tool (gated)
 	server.RegisterTool("reconcile_environment", func(ctx context.Context, args map[string]interface{}) (interface{}, error) {
+		// Track billable event BEFORE execution
+		tracker.TrackEvent(apify.EventReconcileEnvironment, "reconcile_environment", extractMetadata(args))
 		return handleReconcileEnvironment(server, args, configs)
 	})
 
 	// Monetization tools
 	server.RegisterTool("get_pro_license", func(ctx context.Context, args map[string]interface{}) (interface{}, error) {
+		tracker.TrackEvent(apify.EventGetProLicense, "get_pro_license", extractMetadata(args))
 		return handleGetProLicense(server)
 	})
 
@@ -43,8 +53,25 @@ func RegisterAllTools(server *Server, configs []*config.EcosystemConfig) {
 	})
 
 	server.RegisterTool("check_license_status", func(ctx context.Context, args map[string]interface{}) (interface{}, error) {
+		tracker.TrackEvent(apify.EventCheckLicenseStatus, "check_license_status", extractMetadata(args))
 		return handleCheckLicenseStatus(server)
 	})
+}
+
+// extractMetadata extracts metadata from tool arguments for event tracking
+func extractMetadata(args map[string]interface{}) map[string]string {
+	metadata := make(map[string]string)
+	
+	if projectRoot, ok := args["project_root"].(string); ok {
+		metadata["project_root"] = projectRoot
+	}
+	
+	// Add user ID if available from environment
+	if userID := os.Getenv("APIFY_USER_ID"); userID != "" {
+		metadata["user_id"] = userID
+	}
+	
+	return metadata
 }
 
 // handleVerifyBuildFreshness handles the verify_build_freshness tool
