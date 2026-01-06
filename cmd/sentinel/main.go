@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"path/filepath"
 
 	"dev-env-sentinel/internal/config"
 	"dev-env-sentinel/internal/mcp"
@@ -19,12 +20,41 @@ func main() {
 	}
 }
 
+// getConfigBaseDir returns the base directory for config discovery
+func getConfigBaseDir() string {
+	// Check for explicit config directory in environment
+	if configDir := os.Getenv("SENTINEL_CONFIG_DIR"); configDir != "" {
+		return configDir
+	}
+
+	// Try to find config relative to executable
+	if exePath, err := os.Executable(); err == nil {
+		exeDir := filepath.Dir(exePath)
+		// Check if config directory exists relative to executable
+		configPath := filepath.Join(exeDir, "config")
+		if _, err := os.Stat(configPath); err == nil {
+			return exeDir
+		}
+		// For npm package, config might be in parent directory
+		parentConfigPath := filepath.Join(exeDir, "..", "config")
+		if _, err := os.Stat(parentConfigPath); err == nil {
+			return filepath.Join(exeDir, "..")
+		}
+	}
+
+	// Fallback to current working directory
+	return "."
+}
+
 // runMCPServer runs the MCP server
 func runMCPServer() {
+	// Get base directory for config discovery
+	baseDir := getConfigBaseDir()
+	
 	// Load ecosystem configs from config directory structure
-	configs, err := config.DiscoverEcosystemConfigs(".")
+	configs, err := config.DiscoverEcosystemConfigs(baseDir)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "error loading configs: %v\n", err)
+		fmt.Fprintf(os.Stderr, "error loading configs from %s: %v\n", baseDir, err)
 		os.Exit(1)
 	}
 

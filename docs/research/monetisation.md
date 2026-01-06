@@ -120,3 +120,55 @@ If you want to sell **licenses** for your local Go binary (e.g., for the Jakarta
 
 
 
+
+
+
+In 2026, Apify has refined its monetization specifically to solve this "compute cost" fear for developers. For a senior developer like you, the **Pay-Per-Event (PPE)** and **Pay-Per-Result (PPR)** models are your best friends because they shift the financial risk away from you and onto the platform/user.
+
+Here is the "brutally honest" breakdown of how you protect your wallet while using Apify as your MCP host.
+
+---
+
+## 1. The "Safety Net" Pricing Models
+
+If you choose the **PPE (Pay-Per-Event)** or **PPR (Pay-Per-Result)** models, Apify changes how they calculate your earnings.
+
+* **User Pays for Compute:** When a paying user runs your Actor, they are charged for the compute units ($0.3/CU) **on top** of the price you set.
+* **The Profit Formula:** `Profit = (0.8 * Your_Price) - Platform_Costs`.
+* **The "Zero-Loss" Guarantee:** If your Actor is inefficient and the platform costs (compute/RAM) exceed your 80% revenue share for a specific run, **Apify automatically sets your profit for that month to $0.** You will never receive a bill for a user's usage.
+
+---
+
+## 2. Managing "Free" Users
+
+You mentioned wanting a free tier. Here is how you handle them without incurring costs:
+
+* **Free Trial System (Rental Model):** If you use the **Rental** model, you can offer a "14-day Free Trial." After 14 days, the user **must** upgrade to a paid Apify plan to keep using your Actor. If they don't upgrade, they are simply blocked from running it. You pay nothing.
+* **The "Free Plan" Ceiling:** Users on Apify’s "Free Plan" get $5 of monthly credits. Once they burn through that $5 by running your MCP, they are cut off by the platform. You are not responsible for providing them more compute.
+
+---
+
+## 3. How to Design your MCP for "Zero Cost"
+
+Since you are building a **Sentinel (Go)** and **Jakarta (Java)** MCP, here is the senior-level design to keep your overhead at zero:
+
+1. **Use the "Creator Plan":** Apify currently offers a **$1/month Creator Plan** that gives you $500 in one-time credits. This covers all your testing and development for 6 months.
+2. **Define "Paid Events":** In your Go code for the Sentinel, only trigger a charge for high-value actions.
+* `check_ports`: Free (Low compute).
+* `reconcile_environment` (The "Fix it" button): **Paid Event ($0.05).**
+
+
+3. **Client-Side Execution:** Since these are MCPs, you can actually design them so the "heavy lifting" (scanning the 1M line legacy repo) happens on the **user's local machine**, while your Apify Actor acts as the "Brain" or "License Validator." This keeps your compute units near zero.
+
+---
+
+## Your First "No-Risk" Step
+
+Sign up for the **Apify Creator Plan ($1)**. This gives you $500 of platform credits—more than enough to build, test, and host both the Sentinel and Jakarta MCPs without a single "out of pocket" compute charge.
+
+**Would you like the Go code snippet for triggering a "Paid Event" in Apify?** I can show you how to call `Actor.charge("fix-env-event")` so you get paid the moment a user clicks "Fix."
+
+
+
+
+

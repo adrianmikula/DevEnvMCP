@@ -71,18 +71,18 @@ func (s *Server) RegisterTool(name string, handler ToolHandler) {
 	s.tools[name] = handler
 }
 
-// Start starts the MCP server with stdio transport
+// Start starts the MCP server with the default transport (detected automatically)
 func (s *Server) Start() error {
-	// Initialize MCP protocol
-	if err := s.initialize(); err != nil {
-		return err
-	}
-
-	// Start message loop
-	return s.messageLoop()
+	transport := DetectTransport()
+	return transport.Start(context.Background(), s)
 }
 
-// initialize sends the initialize request/response
+// StartWithTransport starts the MCP server with a specific transport
+func (s *Server) StartWithTransport(transport Transport) error {
+	return transport.Start(context.Background(), s)
+}
+
+// initialize sends the initialize request/response (for stdio transport)
 func (s *Server) initialize() error {
 	// Read initialize request
 	var initReq map[string]interface{}

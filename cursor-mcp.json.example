@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "dev-env-sentinel": {
+      "command": "E:\\Source\\DevEnvMCP\\sentinel.exe",
+      "args": [],
+      "env": {
+        "SENTINEL_CONFIG_DIR": "E:\\Source\\DevEnvMCP"
+      }
+    }
+  }
+}
+
