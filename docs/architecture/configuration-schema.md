@@ -14,22 +14,22 @@ Language-level configurations that define base language support (YAML files dire
 - `javascript.yaml` - JavaScript language support
 - `csharp.yaml` - C# language support
 
-### Language-Specific Tool Configs (`config/languages/{language}/`)
+### Language-Specific Tool Configs (`config/tools/{language}/`)
 
 Tool-specific configurations organized by language in subdirectories:
 
-- `config/languages/java/` - Java tools
+- `config/tools/java/` - Java tools
   - `maven.yaml` - Maven build tool
   - `gradle.yaml` - Gradle build tool
   - `spring.yaml` - Spring Framework
   - `tomcat.yaml` - Apache Tomcat
   - `jboss.yaml` - JBoss/WildFly
 
-- `config/languages/python/` - Python tools
+- `config/tools/python/` - Python tools
   - `poetry.yaml` - Poetry package manager
   - `conda.yaml` - Conda environment manager
 
-- `config/languages/javascript/` - JavaScript tools
+- `config/tools/javascript/` - JavaScript tools
   - `npm.yaml` - npm package manager
   - `react.yaml` - React framework
   - `vite.yaml` - Vite build tool
@@ -37,8 +37,10 @@ Tool-specific configurations organized by language in subdirectories:
   - `rollup.yaml` - Rollup bundler
   - `sass.yaml` - Sass/SCSS preprocessor
 
-- `config/languages/csharp/` - C# tools
-  - (tool configs can be added here)
+- `config/tools/csharp/` - C# tools
+  - `msbuild.yaml` - MSBuild build tool
+  - `nuget.yaml` - NuGet package manager
+  - `dotnet.yaml` - dotnet CLI
 
 ### Infrastructure Tools (`config/infrastructure/`)
 

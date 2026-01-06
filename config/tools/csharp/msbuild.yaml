@@ -1,0 +1,127 @@
+ecosystem:
+  name: "MSBuild"
+  id: "msbuild"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "*.csproj"
+      - "*.sln"
+      - "*.vcxproj"
+      - "*.fsproj"
+    required_files:
+      - "*.csproj"
+    optional_files:
+      - "*.sln"
+      - "*.vcxproj"
+      - "*.fsproj"
+      - "Directory.Build.props"
+      - "Directory.Build.targets"
+    directory_patterns:
+      - "bin"
+      - "obj"
+      - "packages"
+      
+  manifest:
+    primary_file: "*.csproj"
+    location: "."
+    format: "xml"
+    
+  cache:
+    locations:
+      - "${HOME}/.nuget/packages"
+      - "${APPDATA}/NuGet"
+      - "${LOCALAPPDATA}/NuGet"
+      - "packages"
+    structure: "hierarchical"
+    artifact_pattern: ".*\\.dll$|.*\\.nupkg$|.*\\.exe$"
+    
+  build:
+    output_directories:
+      - "bin"
+      - "obj"
+      - "packages"
+    artifact_patterns:
+      - "bin/**/*.dll"
+      - "bin/**/*.exe"
+      - "bin/**/*.pdb"
+      - "obj/**/*.dll"
+    clean_command: "msbuild /t:Clean || dotnet clean"
+    
+  dependencies:
+    lock_file: "packages.lock.json"
+    lock_file_format: "json"
+    resolve_command: "msbuild /t:Restore || nuget restore || dotnet restore"
+    check_command: "msbuild /t:Restore /v:q || nuget list"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: true
+      build_output_check: true
+      commands:
+        - name: "check_csproj_vs_build"
+          type: "timestamp_compare"
+          source_pattern: "**/*.csproj"
+          target_pattern: "bin/**/*.dll"
+          description: "Check if .csproj files are newer than compiled DLLs"
+          
+        - name: "check_cs_vs_dll"
+          type: "timestamp_compare"
+          source_pattern: "**/*.cs"
+          target_pattern: "bin/**/*.dll"
+          description: "Check if C# source files are newer than compiled DLLs"
+          
+        - name: "check_sln_vs_build"
+          type: "timestamp_compare"
+          source_pattern: "*.sln"
+          target_pattern: "bin/**/*.dll"
+          description: "Check if solution file is newer than build output"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "Environment\\.GetEnvironmentVariable\\(['\"]([A-Z_][A-Z0-9_]*)['\"]\\)"
+      - "ConfigurationManager\\.AppSettings\\[['\"]([A-Z_][A-Z0-9_]*)['\"]\\]"
+      - "\\$\\(([A-Z_][A-Z0-9_]*)\\)"
+    config_files:
+      - "app.config"
+      - "web.config"
+      - "appsettings.json"
+      - "appsettings.*.json"
+      - "Directory.Build.props"
+      - "Directory.Build.targets"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "msbuild"
+        type: "command"
+        check_command: "msbuild -version || msbuild /version"
+        version_extract: "([\\d\\.]+)"
+        
+      - name: "dotnet"
+        type: "command"
+        check_command: "dotnet --version"
+        version_extract: "(\\d+\\.\\d+\\.\\d+)"
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_cache"
+        command: "msbuild /t:Clean || dotnet clean"
+        verify_command: "test ! -d bin || test ! -d obj"
+        description: "Clean MSBuild build artifacts"
+        
+      - issue_type: "stale_build"
+        command: "msbuild /t:Build || dotnet build"
+        verify_command: "test -d bin || test -d obj"
+        description: "Rebuild MSBuild project"
+        
+      - issue_type: "stale_dependencies"
+        command: "msbuild /t:Restore || nuget restore || dotnet restore"
+        verify_command: "test -d packages || test -f packages.lock.json"
+        description: "Restore NuGet packages"
+

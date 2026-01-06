@@ -1,0 +1,141 @@
+ecosystem:
+  name: "dotnet CLI"
+  id: "dotnet"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "*.csproj"
+      - "*.sln"
+      - "*.fsproj"
+      - "*.vbproj"
+      - "global.json"
+    required_files:
+      - "*.csproj"
+    optional_files:
+      - "*.sln"
+      - "*.fsproj"
+      - "*.vbproj"
+      - "global.json"
+      - "Directory.Build.props"
+      - "Directory.Build.targets"
+    directory_patterns:
+      - "bin"
+      - "obj"
+      
+  manifest:
+    primary_file: "*.csproj"
+    location: "."
+    format: "xml"
+    
+  cache:
+    locations:
+      - "${HOME}/.nuget/packages"
+      - "${APPDATA}/NuGet"
+      - "${LOCALAPPDATA}/NuGet"
+      - "${HOME}/.dotnet"
+    structure: "hierarchical"
+    artifact_pattern: ".*\\.dll$|.*\\.nupkg$|.*\\.exe$"
+    
+  build:
+    output_directories:
+      - "bin"
+      - "obj"
+    artifact_patterns:
+      - "bin/**/*.dll"
+      - "bin/**/*.exe"
+      - "bin/**/*.pdb"
+      - "obj/**/*.dll"
+    clean_command: "dotnet clean"
+    
+  dependencies:
+    lock_file: "packages.lock.json"
+    lock_file_format: "json"
+    resolve_command: "dotnet restore"
+    check_command: "dotnet list package"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: true
+      build_output_check: true
+      commands:
+        - name: "check_csproj_vs_build"
+          type: "timestamp_compare"
+          source_pattern: "**/*.csproj"
+          target_pattern: "bin/**/*.dll"
+          description: "Check if .csproj files are newer than compiled DLLs"
+          
+        - name: "check_cs_vs_dll"
+          type: "timestamp_compare"
+          source_pattern: "**/*.cs"
+          target_pattern: "bin/**/*.dll"
+          description: "Check if C# source files are newer than compiled DLLs"
+          
+        - name: "check_global_json_vs_build"
+          type: "timestamp_compare"
+          source: "global.json"
+          target_pattern: "bin/**/*.dll"
+          description: "Check if global.json is newer than build output"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "Environment\\.GetEnvironmentVariable\\(['\"]([A-Z_][A-Z0-9_]*)['\"]\\)"
+      - "DOTNET_([A-Z_][A-Z0-9_]*)"
+      - "ASPNETCORE_([A-Z_][A-Z0-9_]*)"
+    config_files:
+      - "appsettings.json"
+      - "appsettings.*.json"
+      - "global.json"
+      - "Directory.Build.props"
+      - "Directory.Build.targets"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "dotnet"
+        type: "command"
+        check_command: "dotnet --version"
+        version_extract: "(\\d+\\.\\d+\\.\\d+)"
+        
+  version:
+    language: "csharp"
+    version_command: "dotnet --version"
+    version_pattern: "(\\d+\\.\\d+\\.\\d+)"
+    version_managers:
+      - name: "asdf"
+        check_command: "command -v asdf"
+        list_command: "asdf list-all dotnet-core"
+        install_command: "asdf install dotnet-core {version}"
+        switch_command: "asdf global dotnet-core {version}"
+        current_command: "asdf current dotnet-core"
+        
+  requirements:
+    min_version: "6.0"
+    max_version: "9.0"
+    preferred_versions:
+      - "8.0"
+      - "9.0"
+    excluded_versions: []
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_cache"
+        command: "dotnet nuget locals all --clear"
+        verify_command: "dotnet nuget locals all --list"
+        description: "Clear dotnet package cache"
+        
+      - issue_type: "stale_build"
+        command: "dotnet build"
+        verify_command: "test -d bin || test -d obj"
+        description: "Rebuild dotnet project"
+        
+      - issue_type: "missing_dependencies"
+        command: "dotnet restore"
+        verify_command: "test -f packages.lock.json || dotnet list package"
+        description: "Restore dotnet packages"
+

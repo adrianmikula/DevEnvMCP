@@ -30,7 +30,7 @@ func LoadEcosystemConfig(path string) (*EcosystemConfig, error) {
 }
 
 // DiscoverEcosystemConfigs finds all ecosystem config files in the config directory structure
-// New structure: config/languages/ (language yamls), config/languages/{lang}/ (tool yamls),
+// New structure: config/languages/ (language yamls only), config/tools/{lang}/ (language-specific tool yamls),
 // config/infrastructure/ (infrastructure tools including databases, containers, docker, etc.)
 // Falls back to old structure (language-configs, tool-configs) or baseDir for backwards compatibility
 func DiscoverEcosystemConfigs(baseDir string) ([]*EcosystemConfig, error) {
@@ -38,17 +38,27 @@ func DiscoverEcosystemConfigs(baseDir string) ([]*EcosystemConfig, error) {
 
 	configDir := filepath.Join(baseDir, "config")
 	langDir := filepath.Join(configDir, "languages")
+	toolsDir := filepath.Join(configDir, "tools")
 	infraDir := filepath.Join(configDir, "infrastructure")
 	
 	// Check if new structure exists
 	if common.DirExists(configDir) {
-		// Discover all configs in languages directory (language yamls and tool yamls in subdirs)
+		// Discover language configs (YAML files directly in languages directory, not recursive)
 		if common.DirExists(langDir) {
-			langConfigs, err := discoverConfigsInDir(langDir, true)
+			langConfigs, err := discoverConfigsInDir(langDir, false)
 			if err != nil {
 				return nil, fmt.Errorf("failed to discover language configs: %w", err)
 			}
 			configs = append(configs, langConfigs...)
+		}
+
+		// Discover language-specific tool configs recursively (config/tools/{lang}/*.yaml)
+		if common.DirExists(toolsDir) {
+			toolConfigs, err := discoverConfigsInDir(toolsDir, true)
+			if err != nil {
+				return nil, fmt.Errorf("failed to discover tool configs: %w", err)
+			}
+			configs = append(configs, toolConfigs...)
 		}
 
 		// Discover infrastructure tool configs recursively (includes databases, containers, docker, etc.)

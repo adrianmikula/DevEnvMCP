@@ -1,0 +1,112 @@
+ecosystem:
+  name: "NuGet"
+  id: "nuget"
+  version: "1.0"
+  
+  detection:
+    manifest_files:
+      - "packages.config"
+      - "*.csproj"
+      - "*.sln"
+      - "nuget.config"
+    required_files: []
+    optional_files:
+      - "packages.config"
+      - "*.csproj"
+      - "*.sln"
+      - "nuget.config"
+      - ".nuget"
+    directory_patterns:
+      - "packages"
+      - ".nuget"
+      
+  manifest:
+    primary_file: "packages.config"
+    location: "."
+    format: "xml"
+    
+  cache:
+    locations:
+      - "${HOME}/.nuget/packages"
+      - "${APPDATA}/NuGet"
+      - "${LOCALAPPDATA}/NuGet"
+      - "${NUGET_PACKAGES}"
+      - "packages"
+    structure: "hierarchical"
+    artifact_pattern: ".*\\.nupkg$|.*\\.nuspec$"
+    
+  build:
+    output_directories:
+      - "packages"
+    artifact_patterns:
+      - "packages/**/*.nupkg"
+      - "packages/**/*.dll"
+    clean_command: "nuget locals all -clear || rm -rf packages"
+    
+  dependencies:
+    lock_file: "packages.lock.json"
+    lock_file_format: "json"
+    resolve_command: "nuget restore || dotnet restore"
+    check_command: "nuget list || dotnet list package"
+    
+  verification:
+    build_freshness:
+      manifest_timestamp_check: true
+      cache_timestamp_check: true
+      build_output_check: false
+      commands:
+        - name: "check_packages_config_vs_cache"
+          type: "timestamp_compare"
+          source: "packages.config"
+          target_pattern: "packages/**/*"
+          description: "Check if packages.config is newer than cached packages"
+          
+        - name: "check_csproj_vs_packages"
+          type: "timestamp_compare"
+          source_pattern: "**/*.csproj"
+          target_pattern: "packages/**/*"
+          description: "Check if .csproj files are newer than restored packages"
+          
+    dependency_audit:
+      enabled: true
+      commands: []
+          
+  environment:
+    variable_patterns:
+      - "NUGET_([A-Z_][A-Z0-9_]*)"
+      - "\\$\\(([A-Z_][A-Z0-9_]*)\\)"
+    config_files:
+      - "nuget.config"
+      - ".nuget/NuGet.Config"
+      - "${APPDATA}/NuGet/NuGet.Config"
+    required_vars: []
+    
+  infrastructure:
+    services:
+      - name: "nuget"
+        type: "command"
+        check_command: "nuget help || nuget"
+        version_extract: "NuGet Version: (\\d+\\.\\d+\\.\\d+)"
+        
+      - name: "dotnet"
+        type: "command"
+        check_command: "dotnet --version"
+        version_extract: "(\\d+\\.\\d+\\.\\d+)"
+        
+  reconciliation:
+    fixes:
+      - issue_type: "stale_cache"
+        command: "nuget locals all -clear"
+        verify_command: "nuget locals all -list"
+        description: "Clear NuGet package cache"
+        
+      - issue_type: "missing_packages"
+        command: "nuget restore || dotnet restore"
+        verify_command: "test -d packages || nuget list"
+        description: "Restore NuGet packages"
+        
+      - issue_type: "stale_lock"
+        command: "dotnet restore --force"
+        verify_command: "test -f packages.lock.json"
+        description: "Update packages.lock.json"
+

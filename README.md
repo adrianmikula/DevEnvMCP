@@ -23,8 +23,9 @@ dev-env-sentinel/
 │   ├── auditor/            # Dependency/env var auditing
 │   └── reconciler/         # Auto-fix functionality
 ├── config/                 # Configuration files
-│   ├── languages/         # Language-level configs and language-specific tools
-│   │   ├── *.yaml        # Language configs (java.yaml, python.yaml, etc.)
+│   ├── languages/         # Language-level configs
+│   │   └── *.yaml        # Language configs (java.yaml, python.yaml, etc.)
+│   ├── tools/             # Language-specific tool configs
 │   │   ├── java/         # Java tools (Maven, Gradle, Spring, etc.)
 │   │   ├── python/       # Python tools (Poetry, Conda)
 │   │   ├── javascript/   # JavaScript tools (npm, React, Vite, etc.)
@@ -228,7 +229,7 @@ Add a YAML config file to `config/languages/` for the base language support (e.g
 
 ### Adding a Tool
 
-For language-specific tools, add a YAML config file to `config/languages/{language}/` where `{language}` is the language the tool is used with (e.g., `config/languages/java/maven.yaml`).
+For language-specific tools, add a YAML config file to `config/tools/{language}/` where `{language}` is the language the tool is used with (e.g., `config/tools/java/maven.yaml`).
 
 For infrastructure tools, add them to the appropriate subdirectory under `config/infrastructure/`:
 - Docker tools: `config/infrastructure/docker/`
