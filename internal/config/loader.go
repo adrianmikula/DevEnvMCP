@@ -29,50 +29,79 @@ func LoadEcosystemConfig(path string) (*EcosystemConfig, error) {
 	return &config, nil
 }
 
-// DiscoverEcosystemConfigs finds all ecosystem config files in language-configs and tool-configs directories
-// If those directories don't exist, it falls back to discovering configs in the base directory (for backwards compatibility)
+// DiscoverEcosystemConfigs finds all ecosystem config files in the config directory structure
+// New structure: config/languages/ (language yamls), config/languages/{lang}/ (tool yamls),
+// config/infrastructure/ (infrastructure tools including databases, containers, docker, etc.)
+// Falls back to old structure (language-configs, tool-configs) or baseDir for backwards compatibility
 func DiscoverEcosystemConfigs(baseDir string) ([]*EcosystemConfig, error) {
 	var configs []*EcosystemConfig
 
-	langDir := filepath.Join(baseDir, "language-configs")
-	toolDir := filepath.Join(baseDir, "tool-configs")
+	configDir := filepath.Join(baseDir, "config")
+	langDir := filepath.Join(configDir, "languages")
+	infraDir := filepath.Join(configDir, "infrastructure")
 	
 	// Check if new structure exists
-	if common.DirExists(langDir) || common.DirExists(toolDir) {
-		// Discover language configs
+	if common.DirExists(configDir) {
+		// Discover all configs in languages directory (language yamls and tool yamls in subdirs)
 		if common.DirExists(langDir) {
-			langConfigs, err := discoverConfigsInDir(langDir, false)
+			langConfigs, err := discoverConfigsInDir(langDir, true)
 			if err != nil {
 				return nil, fmt.Errorf("failed to discover language configs: %w", err)
 			}
 			configs = append(configs, langConfigs...)
 		}
 
-		// Discover tool configs recursively
-		if common.DirExists(toolDir) {
-			toolConfigs, err := discoverConfigsInDir(toolDir, true)
+		// Discover infrastructure tool configs recursively (includes databases, containers, docker, etc.)
+		if common.DirExists(infraDir) {
+			infraConfigs, err := discoverConfigsInDir(infraDir, true)
 			if err != nil {
-				return nil, fmt.Errorf("failed to discover tool configs: %w", err)
+				return nil, fmt.Errorf("failed to discover infrastructure configs: %w", err)
 			}
-			configs = append(configs, toolConfigs...)
+			configs = append(configs, infraConfigs...)
 		}
 	} else {
-		// Fallback: discover configs directly in baseDir (for backwards compatibility and tests)
-		if !common.DirExists(baseDir) {
-			return nil, &common.ErrNotFound{Resource: "config directory", Path: baseDir}
-		}
+		// Fallback to old structure: language-configs and tool-configs
+		oldLangDir := filepath.Join(baseDir, "language-configs")
+		oldToolDir := filepath.Join(baseDir, "tool-configs")
 		
-		flatConfigs, err := discoverConfigsInDir(baseDir, false)
-		if err != nil {
-			return nil, fmt.Errorf("failed to discover configs: %w", err)
+		if common.DirExists(oldLangDir) || common.DirExists(oldToolDir) {
+			// Discover language configs
+			if common.DirExists(oldLangDir) {
+				langConfigs, err := discoverConfigsInDir(oldLangDir, false)
+				if err != nil {
+					return nil, fmt.Errorf("failed to discover language configs: %w", err)
+				}
+				configs = append(configs, langConfigs...)
+			}
+
+			// Discover tool configs recursively
+			if common.DirExists(oldToolDir) {
+				toolConfigs, err := discoverConfigsInDir(oldToolDir, true)
+				if err != nil {
+					return nil, fmt.Errorf("failed to discover tool configs: %w", err)
+				}
+				configs = append(configs, toolConfigs...)
+			}
+		} else {
+			// Final fallback: discover configs directly in baseDir (for tests)
+			if !common.DirExists(baseDir) {
+				return nil, &common.ErrNotFound{Resource: "config directory", Path: baseDir}
+			}
+			
+			flatConfigs, err := discoverConfigsInDir(baseDir, false)
+			if err != nil {
+				return nil, fmt.Errorf("failed to discover configs: %w", err)
+			}
+			configs = append(configs, flatConfigs...)
 		}
-		configs = append(configs, flatConfigs...)
 	}
 
 	return configs, nil
 }
 
 // discoverConfigsInDir finds all YAML config files in a directory, optionally recursing into subdirectories
+// When recursive=false, it discovers YAML files in the current directory only
+// When recursive=true, it discovers YAML files in the current directory AND recursively in subdirectories
 func discoverConfigsInDir(dir string, recursive bool) ([]*EcosystemConfig, error) {
 	var configs []*EcosystemConfig
 
@@ -96,18 +125,16 @@ func discoverConfigsInDir(dir string, recursive bool) ([]*EcosystemConfig, error
 			continue
 		}
 
-		if !isYAMLFile(entry.Name()) {
-			continue
+		// Process YAML files in current directory
+		if isYAMLFile(entry.Name()) {
+			configPath := filepath.Join(dir, entry.Name())
+			config, err := LoadEcosystemConfig(configPath)
+			if err != nil {
+				// Log error but continue with other configs
+				continue
+			}
+			configs = append(configs, config)
 		}
-
-		configPath := filepath.Join(dir, entry.Name())
-		config, err := LoadEcosystemConfig(configPath)
-		if err != nil {
-			// Log error but continue with other configs
-			continue
-		}
-
-		configs = append(configs, config)
 	}
 
 	return configs, nil

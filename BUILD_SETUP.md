@@ -57,7 +57,7 @@ This document summarizes the build and packaging setup for `dev-env-sentinel`.
    - Finds the correct binary (e.g., `sentinel-windows.exe` or `sentinel-linux`)
    - Changes working directory to package root
    - Spawns the Go binary with all arguments
-3. Go binary runs and discovers configs from `language-configs/` and `tool-configs/`
+3. Go binary runs and discovers configs from `config/` directory structure
 
 ### Build Flow
 
@@ -137,8 +137,10 @@ dev-env-sentinel/
 ├── scripts/
 │   ├── build.js                 # Build script
 │   └── postinstall.js           # Post-install script
-├── language-configs/            # Language configs (included in package)
-├── tool-configs/                # Tool configs (included in package)
+├── config/                       # Configuration files (included in package)
+│   ├── languages/              # Language configs and language-specific tools
+│   ├── infrastructure/         # Infrastructure tools
+│   └── databases/              # Database tools
 ├── package.json                 # npm package config
 ├── .npmignore                   # Package exclusion rules
 ├── LICENSE                      # MIT License

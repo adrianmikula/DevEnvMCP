@@ -8,12 +8,14 @@ import (
 	"dev-env-sentinel/internal/config"
 	"dev-env-sentinel/internal/detector"
 	"dev-env-sentinel/internal/infra"
+	"dev-env-sentinel/internal/license"
 	"dev-env-sentinel/internal/reconciler"
 	"dev-env-sentinel/internal/verifier"
 )
 
 // RegisterAllTools registers all MCP tools
 func RegisterAllTools(server *Server, configs []*config.EcosystemConfig) {
+	// Free tier tools
 	server.RegisterTool("verify_build_freshness", func(ctx context.Context, args map[string]interface{}) (interface{}, error) {
 		return handleVerifyBuildFreshness(args, configs)
 	})
@@ -26,8 +28,22 @@ func RegisterAllTools(server *Server, configs []*config.EcosystemConfig) {
 		return handleEnvVarAudit(args, configs)
 	})
 
+	// Premium tier tool (gated)
 	server.RegisterTool("reconcile_environment", func(ctx context.Context, args map[string]interface{}) (interface{}, error) {
-		return handleReconcileEnvironment(args, configs)
+		return handleReconcileEnvironment(server, args, configs)
+	})
+
+	// Monetization tools
+	server.RegisterTool("get_pro_license", func(ctx context.Context, args map[string]interface{}) (interface{}, error) {
+		return handleGetProLicense(server)
+	})
+
+	server.RegisterTool("activate_pro", func(ctx context.Context, args map[string]interface{}) (interface{}, error) {
+		return handleActivatePro(server, args)
+	})
+
+	server.RegisterTool("check_license_status", func(ctx context.Context, args map[string]interface{}) (interface{}, error) {
+		return handleCheckLicenseStatus(server)
 	})
 }
 
@@ -136,8 +152,14 @@ func handleEnvVarAudit(args map[string]interface{}, configs []*config.EcosystemC
 	return reports[0], nil
 }
 
-// handleReconcileEnvironment handles the reconcile_environment tool
-func handleReconcileEnvironment(args map[string]interface{}, configs []*config.EcosystemConfig) (interface{}, error) {
+// handleReconcileEnvironment handles the reconcile_environment tool (PREMIUM FEATURE)
+func handleReconcileEnvironment(server *Server, args map[string]interface{}, configs []*config.EcosystemConfig) (interface{}, error) {
+	// Check if feature is available
+	if err := server.featureManager.RequireFeature("reconcile_environment"); err != nil {
+		upgradeMsg := server.featureManager.GetUpgradeMessage("reconcile_environment")
+		return upgradeMsg, fmt.Errorf("premium feature not available: %w", err)
+	}
+
 	projectRoot, ok := args["project_root"].(string)
 	if !ok {
 		return nil, fmt.Errorf("project_root is required")
@@ -174,5 +196,90 @@ func handleReconcileEnvironment(args map[string]interface{}, configs []*config.E
 	}
 
 	return report, nil
+}
+
+// handleGetProLicense returns information about getting a Pro license
+func handleGetProLicense(server *Server) (interface{}, error) {
+	stripeLink := license.GetStripePaymentLink()
+	apifyURL := license.GetApifyActorURL()
+	
+	msg := fmt.Sprintf(
+		"🚀 Upgrade to Dev-Env Sentinel Pro\n\n"+
+			"Unlock powerful features:\n"+
+			"• Auto-fix environment issues\n"+
+			"• Advanced diagnostics\n"+
+			"• Docker orchestration (Enterprise)\n"+
+			"• Priority support\n\n"+
+			"Purchase Options:\n\n"+
+			"1. Stripe Payment Link (One-time/Subscription):\n   %s\n\n"+
+			"2. Apify Actor (Pay-Per-Event):\n   %s\n\n"+
+			"After purchasing, use the 'activate_pro' tool with your license key.",
+		stripeLink, apifyURL,
+	)
+	
+	return msg, nil
+}
+
+// handleActivatePro activates a Pro license
+func handleActivatePro(server *Server, args map[string]interface{}) (interface{}, error) {
+	key, ok := args["license_key"].(string)
+	if !ok || key == "" {
+		return nil, fmt.Errorf("license_key is required")
+	}
+
+	// Update license on server
+	if err := server.UpdateLicense(key); err != nil {
+		return nil, fmt.Errorf("failed to activate license: %w", err)
+	}
+
+	// Get updated license info
+	lic := server.license
+	msg := fmt.Sprintf(
+		"✅ License activated successfully!\n\n"+
+			"Tier: %s\n"+
+			"Status: %s\n"+
+			"Features enabled: %d\n\n"+
+			"You now have access to all Pro features, including auto-fix capabilities.",
+		lic.Tier,
+		map[bool]string{true: "Valid", false: "Invalid"}[lic.IsValid],
+		len(lic.Features),
+	)
+
+	return msg, nil
+}
+
+// handleCheckLicenseStatus returns current license status
+func handleCheckLicenseStatus(server *Server) (interface{}, error) {
+	lic := server.license
+	
+	status := "Free"
+	if lic.IsValid {
+		status = fmt.Sprintf("%s (Valid)", lic.Tier)
+		if lic.ExpiresAt != nil {
+			status += fmt.Sprintf(" - Expires: %s", lic.ExpiresAt.Format("2006-01-02"))
+		} else if lic.Tier != "free" {
+			status += " - Lifetime"
+		}
+	} else if lic.Tier != "free" {
+		status = fmt.Sprintf("%s (Invalid/Expired)", lic.Tier)
+	}
+
+	msg := fmt.Sprintf(
+		"License Status: %s\n\n"+
+			"Available Features:\n",
+		status,
+	)
+
+	for _, feature := range lic.Features {
+		msg += fmt.Sprintf("• %s\n", feature)
+	}
+
+	if !lic.IsValid && lic.Tier != "free" {
+		msg += "\n⚠️ Your license is invalid or expired. Use 'get_pro_license' to purchase a new one."
+	} else if lic.Tier == "free" {
+		msg += "\n💡 Upgrade to Pro to unlock auto-fix and advanced features. Use 'get_pro_license' for details."
+	}
+
+	return msg, nil
 }
 

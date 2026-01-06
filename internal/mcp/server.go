@@ -8,14 +8,18 @@ import (
 	"os"
 
 	"dev-env-sentinel/internal/auditor"
+	"dev-env-sentinel/internal/features"
 	"dev-env-sentinel/internal/infra"
+	"dev-env-sentinel/internal/license"
 	"dev-env-sentinel/internal/reconciler"
 	"dev-env-sentinel/internal/verifier"
 )
 
 // Server represents the MCP server
 type Server struct {
-	tools map[string]ToolHandler
+	tools          map[string]ToolHandler
+	license        *license.License
+	featureManager *features.FeatureManager
 }
 
 // ToolHandler is a function that handles a tool call
@@ -23,9 +27,43 @@ type ToolHandler func(ctx context.Context, args map[string]interface{}) (interfa
 
 // NewServer creates a new MCP server
 func NewServer() *Server {
-	return &Server{
-		tools: make(map[string]ToolHandler),
+	// Load license from storage or environment
+	storage := license.NewStorage()
+	key, _ := storage.LoadLicense()
+	
+	// Check for license in environment (for Apify deployments)
+	if envKey := os.Getenv("SENTINEL_LICENSE_KEY"); envKey != "" {
+		key = envKey
 	}
+	
+	// Validate license
+	validator := license.NewLicenseValidator()
+	lic, _ := validator.ValidateLicense(key)
+	
+	// Create feature manager
+	featureManager := features.NewFeatureManager(lic)
+	
+	return &Server{
+		tools:          make(map[string]ToolHandler),
+		license:        lic,
+		featureManager: featureManager,
+	}
+}
+
+// UpdateLicense updates the server's license
+func (s *Server) UpdateLicense(key string) error {
+	validator := license.NewLicenseValidator()
+	lic, err := validator.ValidateLicense(key)
+	if err != nil {
+		return err
+	}
+	
+	s.license = lic
+	s.featureManager = features.NewFeatureManager(lic)
+	
+	// Save to storage
+	storage := license.NewStorage()
+	return storage.SaveLicense(key)
 }
 
 // RegisterTool registers a tool handler
@@ -197,7 +235,10 @@ func getToolDescription(name string) string {
 		"verify_build_freshness":    "Verify that build artifacts are up-to-date with source manifests",
 		"check_infrastructure_parity": "Check if required services are running and correct versions",
 		"env_var_audit":            "Audit environment variables for missing or incorrect values",
-		"reconcile_environment":     "Automatically fix detected environment issues",
+		"reconcile_environment":     "Automatically fix detected environment issues (Pro feature)",
+		"get_pro_license":          "Get information about purchasing a Pro license",
+		"activate_pro":             "Activate a Pro license with a license key",
+		"check_license_status":     "Check current license status and available features",
 	}
 	return descriptions[name]
 }

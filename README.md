@@ -22,14 +22,18 @@ dev-env-sentinel/
 │   ├── verifier/           # Build freshness verification
 │   ├── auditor/            # Dependency/env var auditing
 │   └── reconciler/         # Auto-fix functionality
-├── language-configs/       # Language-level ecosystem configs
-├── tool-configs/           # Tool-specific configs organized by language
-│   ├── java/              # Java tools (Maven, Gradle, Spring, etc.)
-│   ├── python/            # Python tools (Poetry, Conda)
-│   ├── javascript/        # JavaScript tools (npm, React, Vite, etc.)
-│   ├── csharp/            # C# tools
-│   ├── docker/            # Docker tools
-│   └── postgres/          # PostgreSQL tools
+├── config/                 # Configuration files
+│   ├── languages/         # Language-level configs and language-specific tools
+│   │   ├── *.yaml        # Language configs (java.yaml, python.yaml, etc.)
+│   │   ├── java/         # Java tools (Maven, Gradle, Spring, etc.)
+│   │   ├── python/       # Python tools (Poetry, Conda)
+│   │   ├── javascript/   # JavaScript tools (npm, React, Vite, etc.)
+│   │   └── csharp/       # C# tools
+│   └── infrastructure/    # Infrastructure tools
+│       ├── docker/        # Docker tools
+│       ├── containers/    # Container-related tools
+│       └── databases/    # Database tools
+│           └── postgres/ # PostgreSQL tools
 └── docs/                   # Documentation
 ```
 
@@ -118,7 +122,7 @@ Add to your Antigravity MCP configuration:
 
 - Go 1.13+ (Go Modules support)
 - Node.js 14+ (for build scripts)
-- YAML configs in `language-configs/` and `tool-configs/`
+- YAML configs in `config/` directory structure
 
 ### Build
 
@@ -181,17 +185,55 @@ The following ecosystems are currently supported:
 - **Apache Tomcat**: Tomcat servlet container (`web.xml`, `context.xml`)
 - **JBoss/WildFly**: JBoss application server (`jboss-web.xml`, `standalone.xml`)
 
+## Monetization & Licensing
+
+Dev-Env Sentinel uses a freemium model with feature flags:
+
+- **Free Tier**: Basic verification and auditing tools
+- **Pro Tier**: Auto-fix capabilities and advanced features
+- **Enterprise Tier**: Docker orchestration and custom configurations
+
+### Quick Start
+
+Check your license status:
+```bash
+# Via MCP tool
+check_license_status()
+```
+
+Get Pro license information:
+```bash
+# Via MCP tool
+get_pro_license()
+```
+
+Activate a license:
+```bash
+# Via MCP tool
+activate_pro(license_key="your-license-key")
+```
+
+### Payment Options
+
+1. **Stripe Payment Link** - One-time or subscription payments
+2. **Apify Pay-Per-Event** - $0.02-$0.05 per tool call
+
+See `docs/monetization.md` for detailed information.
+
 ## Adding New Ecosystems
 
 ### Adding a Language
 
-Add a YAML config file to `language-configs/` for the base language support.
+Add a YAML config file to `config/languages/` for the base language support (e.g., `config/languages/go.yaml`).
 
 ### Adding a Tool
 
-Add a YAML config file to `tool-configs/{language}/` where `{language}` is the language the tool is used with (e.g., `java`, `python`, `javascript`).
+For language-specific tools, add a YAML config file to `config/languages/{language}/` where `{language}` is the language the tool is used with (e.g., `config/languages/java/maven.yaml`).
 
-For standalone tools (like Docker, PostgreSQL), add them to `tool-configs/{tool-name}/`.
+For infrastructure tools, add them to the appropriate subdirectory under `config/infrastructure/`:
+- Docker tools: `config/infrastructure/docker/`
+- Container tools: `config/infrastructure/containers/`
+- Database tools: `config/infrastructure/databases/{tool-name}/`
 
 No code changes needed - the system automatically discovers all configs!
 

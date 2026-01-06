@@ -36,8 +36,7 @@
   },
   "files": [
     "bin",
-    "language-configs",
-    "tool-configs",
+    "config",
     "scripts",
     "README.md",
     "LICENSE"

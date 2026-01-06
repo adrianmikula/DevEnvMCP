@@ -111,8 +111,10 @@ This ensures the published package includes binaries for all supported platforms
 The published package includes:
 
 - `bin/` - Platform-specific binaries and wrapper script
-- `language-configs/` - Language-level ecosystem configurations
-- `tool-configs/` - Tool-specific configurations
+- `config/` - Configuration files
+  - `languages/` - Language-level ecosystem configurations and language-specific tools
+  - `infrastructure/` - Infrastructure tool configurations
+  - `databases/` - Database tool configurations
 - `scripts/` - Build and postinstall scripts
 - `README.md` - Documentation
 - `LICENSE` - MIT License

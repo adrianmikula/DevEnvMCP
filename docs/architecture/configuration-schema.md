@@ -4,32 +4,32 @@ This document defines the YAML schema for ecosystem configuration files.
 
 ## File Structure
 
-Ecosystem configuration files are organized into two top-level directories:
+Ecosystem configuration files are organized under a top-level `config/` directory:
 
-### Language Configs (`language-configs/`)
+### Language Configs (`config/languages/`)
 
-Language-level configurations that define base language support:
+Language-level configurations that define base language support (YAML files directly in this directory):
 - `java.yaml` - Java language support
 - `python.yaml` - Python language support
 - `javascript.yaml` - JavaScript language support
 - `csharp.yaml` - C# language support
 
-### Tool Configs (`tool-configs/`)
+### Language-Specific Tool Configs (`config/languages/{language}/`)
 
 Tool-specific configurations organized by language in subdirectories:
 
-- `tool-configs/java/` - Java tools
+- `config/languages/java/` - Java tools
   - `maven.yaml` - Maven build tool
   - `gradle.yaml` - Gradle build tool
   - `spring.yaml` - Spring Framework
   - `tomcat.yaml` - Apache Tomcat
   - `jboss.yaml` - JBoss/WildFly
 
-- `tool-configs/python/` - Python tools
+- `config/languages/python/` - Python tools
   - `poetry.yaml` - Poetry package manager
   - `conda.yaml` - Conda environment manager
 
-- `tool-configs/javascript/` - JavaScript tools
+- `config/languages/javascript/` - JavaScript tools
   - `npm.yaml` - npm package manager
   - `react.yaml` - React framework
   - `vite.yaml` - Vite build tool
@@ -37,13 +37,24 @@ Tool-specific configurations organized by language in subdirectories:
   - `rollup.yaml` - Rollup bundler
   - `sass.yaml` - Sass/SCSS preprocessor
 
-- `tool-configs/docker/` - Docker tools
+- `config/languages/csharp/` - C# tools
+  - (tool configs can be added here)
+
+### Infrastructure Tools (`config/infrastructure/`)
+
+Infrastructure-related tool configurations organized by category:
+
+- `config/infrastructure/docker/` - Docker tools
   - `docker.yaml` - Docker and Docker Compose
 
-- `tool-configs/postgres/` - PostgreSQL tools
-  - `postgres.yaml` - PostgreSQL database
+- `config/infrastructure/containers/` - Container-related tools
+  - (container tool configs can be added here)
 
-The system automatically discovers all configs recursively from both directories.
+- `config/infrastructure/databases/` - Database tools
+  - `postgres/postgres.yaml` - PostgreSQL database
+  - (other database configs can be added here)
+
+The system automatically discovers all configs recursively from the `config/` directory structure. The loader also supports the old structure (`language-configs/` and `tool-configs/`) for backwards compatibility.
 
 ## Root Schema
 
