@@ -29,7 +29,7 @@ dev-env-sentinel/
 │   │   ├── java/         # Java tools (Maven, Gradle, Spring, etc.)
 │   │   ├── python/       # Python tools (Poetry, Conda)
 │   │   ├── javascript/   # JavaScript tools (npm, React, Vite, etc.)
-│   │   └── csharp/       # C# tools
+│   │   └── csharp/       # C# tools (MSBuild, NuGet, dotnet CLI)
 │   └── infrastructure/    # Infrastructure tools
 │       ├── docker/        # Docker tools
 │       ├── containers/    # Container-related tools

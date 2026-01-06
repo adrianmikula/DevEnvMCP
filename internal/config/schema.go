@@ -9,7 +9,7 @@ type EcosystemConfig struct {
 type Ecosystem struct {
 	Name    string `yaml:"name"`
 	ID      string `yaml:"id"`
-	Version string `yaml:"version"`
+	Version string `yaml:"version"` // Config schema version
 	
 	Detection      Detection      `yaml:"detection"`
 	Manifest       Manifest       `yaml:"manifest"`
@@ -20,7 +20,7 @@ type Ecosystem struct {
 	Environment    Environment    `yaml:"environment"`
 	Infrastructure Infrastructure `yaml:"infrastructure"`
 	Reconciliation Reconciliation `yaml:"reconciliation"`
-	VersionConfig  VersionConfig  `yaml:"version"`
+	VersionConfig  VersionConfig  `yaml:"version_config"` // Renamed to avoid conflict
 	Requirements   Requirements   `yaml:"requirements"`
 }
 

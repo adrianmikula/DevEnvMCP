@@ -72,6 +72,10 @@ func (s *Storage) LoadLicense() (string, error) {
 // ClearLicense removes the stored license
 func (s *Storage) ClearLicense() error {
 	licenseFile := filepath.Join(s.configDir, "license.json")
-	return os.Remove(licenseFile)
+	err := os.Remove(licenseFile)
+	if err != nil && !os.IsNotExist(err) {
+		return err
+	}
+	return nil
 }
 
